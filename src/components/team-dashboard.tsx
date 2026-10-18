@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Activity, ArrowUpRight, CalendarDays, ClipboardList, Shield, Trophy, Users } from "lucide-react";
 
 export type Player = {
@@ -24,12 +24,70 @@ export type MatchItem = { key: string; date: string; home: string; away: string;
 export type Standing = { position: number; name: string; played: number; won: number; drawn: number; lost: number; goalsFor: number; goalsAgainst: number; goalDifference: number; points: number };
 type CompetitionId = "winter" | "promotion" | "cup";
 
+function PlayerVideo({ player }: { player: Player }) {
+    const videoRef = useRef<HTMLVideoElement>(null);
+    const isActive = useRef(false);
+
+    const seekToLastFrame = () => {
+        const video = videoRef.current;
+        if (video && Number.isFinite(video.duration) && video.duration > 0) {
+            video.currentTime = Math.max(0, video.duration - 0.05);
+        }
+    };
+
+    const playVideo = () => {
+        const video = videoRef.current;
+        if (!video) return;
+
+        isActive.current = true;
+        if (video.readyState >= HTMLMediaElement.HAVE_METADATA) video.currentTime = 0;
+        void video.play().catch((error: unknown) => {
+            console.error(`No se pudo reproducir el vídeo de ${player.name}.`, error);
+        });
+    };
+
+    const freezeVideo = () => {
+        const video = videoRef.current;
+        isActive.current = false;
+        if (!video) return;
+
+        video.pause();
+        seekToLastFrame();
+    };
+
+    return (
+        <video
+            ref={videoRef}
+            className="h-full w-full object-cover focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--lime)]"
+            src={player.video ?? undefined}
+            poster={player.photo ?? undefined}
+            muted
+            playsInline
+            preload="metadata"
+            tabIndex={0}
+            aria-label={`Vídeo de ${player.name}. Pasa el ratón o enfoca para reproducir.`}
+            onLoadedMetadata={() => {
+                if (!isActive.current) seekToLastFrame();
+            }}
+            onMouseEnter={playVideo}
+            onMouseLeave={freezeVideo}
+            onFocus={playVideo}
+            onBlur={freezeVideo}
+            onEnded={(event) => {
+                event.currentTarget.pause();
+                seekToLastFrame();
+            }}
+            onError={(event) => console.error(`Error al cargar el vídeo de ${player.name}.`, event.currentTarget.error)}
+        />
+    );
+}
+
 function PlayerCard({ player, index }: { player: Player; index: number }) {
     return (
         <article id={`player-${player.id}`} className="player-card-shell reveal group scroll-mt-24 overflow-hidden" style={{ animationDelay: `${index * 80}ms` }}>
-            <div className="player-card-media player-photo relative h-64 overflow-hidden sm:h-60">
+            <div className="player-card-media player-photo relative aspect-[4/5] overflow-hidden">
                 {player.video
-                    ? <video className="h-full w-full object-cover" src={player.video} poster={player.photo ?? undefined} controls playsInline preload="none" aria-label={`Vídeo de ${player.name}`} />
+                    ? <PlayerVideo player={player} />
                     : player.photo
                         ? <Image src={player.photo} alt={`Foto de ${player.name}`} width={600} height={416} unoptimized className="h-full w-full object-cover" />
                         : null}
@@ -77,10 +135,10 @@ function PlayerCard({ player, index }: { player: Player; index: number }) {
 function PlayerMini({ player, onSelect }: { player: Player; onSelect: () => void }) {
     return (
         <button type="button" onClick={onSelect} aria-label={`Ver ficha de ${player.name}, ${player.position}`} className="group flex w-full min-w-0 flex-col items-center gap-1 rounded-sm px-0.5 py-1 text-center transition hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--lime)]">
-            <span className="relative grid size-9 place-items-center overflow-hidden rounded-full border border-white/50 bg-[#343a32] text-[10px] font-bold text-white transition group-hover:border-[var(--lime)]">
-                {player.photo ? <Image src={player.photo} alt="" fill sizes="36px" unoptimized className="object-cover" /> : player.name.split(" ").map((part) => part[0]).join("")}
+            <span className={`relative grid size-14 shrink-0 place-items-center text-sm font-bold text-white transition group-hover:scale-110 ${player.photo ? "" : "overflow-hidden rounded-full border border-white/50 bg-[#343a32] group-hover:border-[var(--lime)]"}`}>
+                {player.photo ? <Image src={player.photo} alt="" fill sizes="56px" unoptimized className="object-contain" /> : player.name.split(" ").map((part) => part[0]).join("")}
             </span>
-            <span className="max-w-full truncate text-[8px] font-semibold leading-tight text-white">{player.name}</span>
+            <span className="max-w-full truncate text-[9px] font-semibold leading-tight text-white sm:text-[10px]">{player.name}</span>
         </button>
     );
 }
@@ -265,7 +323,7 @@ export function TeamDashboard({ squad, table, results, dataState }: { squad: Pla
                         {squad.length ? (
                             <div className="mb-10 overflow-hidden border border-[var(--line)] bg-[#1c2920] p-3 sm:p-6">
                                 <div className="mb-3 flex items-center justify-between text-[9px] font-bold uppercase tracking-[0.14em] text-white/50"><span>Campo de fútbol sala</span><span>Plantilla · 2026-2027</span></div>
-                                <div className="futsal-pitch relative mx-auto aspect-[2/3] w-full max-w-[440px] overflow-hidden border border-orange-300">
+                                <div className="futsal-pitch relative mx-auto aspect-[2/3] w-full max-w-[520px] overflow-hidden border border-orange-300">
                                     <div className="relative grid h-full grid-cols-4 grid-rows-4">
                                         {[
                                             { role: roles[0], placement: "col-start-2 col-span-2 row-start-1" },
@@ -276,13 +334,13 @@ export function TeamDashboard({ squad, table, results, dataState }: { squad: Pla
                                         ].map(({ role, placement }) => (
                                             <div key={role.id} className={`z-[1] flex flex-col items-center justify-center px-1 py-2 ${placement}`}>
                                                 <p className="mb-1 bg-black/35 px-2 py-1 text-center text-[8px] font-bold uppercase tracking-[0.06em] text-white sm:text-[9px]">{role.label}</p>
-                                                <div className="flex w-full max-w-[208px] flex-wrap justify-center">{(playersByRole.get(role.id) ?? []).map((player) => <div key={player.id} className="w-1/4"><PlayerMini player={player} onSelect={() => openPlayerCard(player)} /></div>)}</div>
+                                                <div className="flex w-full max-w-[320px] flex-wrap justify-center">{(playersByRole.get(role.id) ?? []).map((player) => <div key={player.id} className="w-1/3 sm:w-1/4"><PlayerMini player={player} onSelect={() => openPlayerCard(player)} /></div>)}</div>
                                                 {playersByRole.get(role.id)?.length === 0 ? <span className="bg-black/35 px-2 py-1 text-center text-[8px] text-white/80">Sin asignar</span> : null}
                                             </div>
                                         ))}
                                     </div>
                                 </div>
-                                {playersByRole.get("unspecified")?.length ? <div className="mt-3 border border-dashed border-white/20 p-3"><p className="mb-2 text-[9px] font-bold uppercase text-white/55">Posición por definir</p><div className="flex flex-wrap gap-2">{playersByRole.get("unspecified")?.map((player) => <div key={player.id} className="w-16"><PlayerMini player={player} onSelect={() => openPlayerCard(player)} /></div>)}</div></div> : null}
+                                {playersByRole.get("unspecified")?.length ? <div className="mt-3 border border-dashed border-white/20 p-3"><p className="mb-2 text-[9px] font-bold uppercase text-white/55">Posición por definir</p><div className="flex flex-wrap gap-2">{playersByRole.get("unspecified")?.map((player) => <div key={player.id} className="w-20"><PlayerMini player={player} onSelect={() => openPlayerCard(player)} /></div>)}</div></div> : null}
                             </div>
                         ) : null}
                         {squad.length ? <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">{squad.map((player, index) => <PlayerCard key={player.name} player={player} index={index} />)}</div> : <p className="border-y border-[var(--line)] py-6 text-sm text-[var(--muted)]">{emptyMessage}</p>}
