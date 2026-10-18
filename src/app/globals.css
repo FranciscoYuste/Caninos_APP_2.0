@@ -100,17 +100,13 @@ input {
 
 .player-card-number {
     z-index: 3;
-    color: var(--ink);
-    background: var(--lime);
-    clip-path: polygon(0 0, 100% 0, 100% 76%, 76% 100%, 0 100%);
-    filter: drop-shadow(0 3px 8px #00000080);
+    color: #f2cf1850;
+    text-shadow: 0 4px 24px #000000aa;
 }
 
 .player-card-crest {
     z-index: 3;
-    border: 1px solid #f2cf18bb;
-    background: #080908dd;
-    box-shadow: 0 0 18px #f2cf1838;
+    filter: drop-shadow(0 0 12px #f2cf1870);
 }
 
 .player-card-caption {
@@ -120,6 +116,10 @@ input {
 
 .player-card-stats {
     background: #080908;
+}
+
+.player-card-stats p:first-child {
+    text-shadow: 0 0 12px #ffffff30;
 }
 
 .player-card-media::after {
@@ -141,13 +141,11 @@ input {
     transform: translateX(110%);
 }
 
-.player-card-media img,
-.player-card-media video {
+.player-card-media img {
     transition: transform 450ms ease;
 }
 
-.group:hover .player-card-media img,
-.group:hover .player-card-media video {
+.group:hover .player-card-media img {
     transform: scale(1.045);
 }
 

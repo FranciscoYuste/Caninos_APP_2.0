@@ -58,7 +58,7 @@ function PlayerVideo({ player }: { player: Player }) {
     return (
         <video
             ref={videoRef}
-            className="h-full w-full object-cover focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--lime)]"
+            className="h-full w-full object-contain focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--lime)]"
             src={player.video ?? undefined}
             poster={player.photo ?? undefined}
             muted
@@ -85,17 +85,17 @@ function PlayerVideo({ player }: { player: Player }) {
 function PlayerCard({ player, index }: { player: Player; index: number }) {
     return (
         <article id={`player-${player.id}`} className="player-card-shell reveal group scroll-mt-24 overflow-hidden" style={{ animationDelay: `${index * 80}ms` }}>
-            <div className="player-card-media player-photo relative aspect-[4/5] overflow-hidden">
+            <div className={`player-card-media relative aspect-[4/5] overflow-hidden ${player.video ? "bg-black" : "player-photo"}`}>
                 {player.video
                     ? <PlayerVideo player={player} />
                     : player.photo
                         ? <Image src={player.photo} alt={`Foto de ${player.name}`} width={600} height={416} unoptimized className="h-full w-full object-cover" />
                         : null}
-                <span className="player-card-number absolute left-3 top-3 grid min-w-12 place-items-center px-3 py-2 font-mono text-lg font-black">
-                    {player.number === null ? "—" : `#${player.number}`}
+                <span className="player-card-number absolute left-2 top-3 font-sans text-[9rem] font-black italic leading-[0.75] sm:text-[11rem]">
+                    {player.number ?? "—"}
                 </span>
-                <span className="player-card-crest absolute right-3 top-3 grid size-14 place-items-center rounded-full">
-                    <Image src="/fotos/escudo.png" alt="Escudo de Bayern D.L. Caninos" width={48} height={48} className="size-11 object-contain" />
+                <span className="player-card-crest absolute right-3 top-3">
+                    <Image src="/fotos/escudo.png" alt="Escudo de Bayern D.L. Caninos" width={80} height={80} className="size-20 object-contain" />
                 </span>
                 <div className="player-card-caption absolute inset-x-0 bottom-0 px-4 pb-4 pt-14">
                     <p className="text-xl font-black uppercase leading-tight text-white sm:text-lg">{player.name}</p>
@@ -103,15 +103,18 @@ function PlayerCard({ player, index }: { player: Player; index: number }) {
                 </div>
             </div>
             <div className="player-card-stats p-4">
-                <div className="grid grid-cols-4 divide-x divide-white/10">
+                <div className="grid grid-cols-4 divide-x divide-white/15">
                     {[{ value: player.goals, label: "GOL" }, { value: player.assists, label: "ASI" }, { value: player.games, label: "CONV." }, { value: player.cards, label: "TARJ." }].map((stat) => (
-                        <div key={stat.label} className="px-1 text-center first:pl-0 last:pr-0"><p className="font-mono text-base font-bold text-white sm:text-lg">{stat.value}</p><p className="mt-1 text-[8px] font-bold tracking-[0.1em] text-[var(--muted)]">{stat.label}</p></div>
+                        <div key={stat.label} className="flex min-h-20 min-w-0 flex-col items-center justify-center gap-2 px-1 text-center">
+                            <p className="whitespace-nowrap font-mono text-2xl font-black leading-none tabular-nums text-white sm:text-3xl">{stat.value}</p>
+                            <p className="whitespace-nowrap text-[8px] font-bold tracking-[0.12em] text-[var(--muted)]">{stat.label}</p>
+                        </div>
                     ))}
                 </div>
-                <div className="mt-4 flex flex-wrap gap-1.5 border-t border-white/10 pt-3 text-[9px] text-[var(--muted)]">
-                    <span className="border border-[var(--line)] px-2 py-1">PEN {player.penalties}</span>
-                    <span className="border border-[var(--line)] px-2 py-1">DOBLES {player.doublePenalties}</span>
-                    <span className="border border-[var(--line)] px-2 py-1">FALTAS DIR. {player.directFreeKicks}</span>
+                <div className="mt-4 flex flex-wrap justify-center gap-2 border-t border-white/10 pt-4 text-[10px] text-[var(--muted)]">
+                    <span className="inline-flex min-h-10 items-center justify-center border border-[var(--line)] px-3 py-2 text-center font-semibold">PEN {player.penalties}</span>
+                    <span className="inline-flex min-h-10 items-center justify-center border border-[var(--line)] px-3 py-2 text-center font-semibold">DOBLES {player.doublePenalties}</span>
+                    <span className="inline-flex min-h-10 items-center justify-center border border-[var(--line)] px-3 py-2 text-center font-semibold">FALTAS DIR. {player.directFreeKicks}</span>
                 </div>
                 {player.matchStats?.length ? (
                     <details className="mt-3 border-t border-white/10 pt-3">
@@ -327,14 +330,14 @@ export function TeamDashboard({ squad, table, results, dataState }: { squad: Pla
                                     <div className="relative grid h-full grid-cols-4 grid-rows-4">
                                         {[
                                             { role: roles[0], placement: "col-start-2 col-span-2 row-start-1" },
-                                            { role: roles[1], placement: "col-start-2 col-span-2 row-start-2" },
+                                            { role: roles[1], placement: "col-start-1 col-span-4 row-start-2" },
                                             { role: roles[2], placement: "col-start-1 col-span-2 row-start-3" },
                                             { role: roles[3], placement: "col-start-3 col-span-2 row-start-3" },
-                                            { role: roles[4], placement: "col-start-2 col-span-2 row-start-4" },
+                                            { role: roles[4], placement: "col-start-1 col-span-4 row-start-4" },
                                         ].map(({ role, placement }) => (
                                             <div key={role.id} className={`z-[1] flex flex-col items-center justify-center px-1 py-2 ${placement}`}>
                                                 <p className="mb-1 bg-black/35 px-2 py-1 text-center text-[8px] font-bold uppercase tracking-[0.06em] text-white sm:text-[9px]">{role.label}</p>
-                                                <div className="flex w-full max-w-[320px] flex-wrap justify-center">{(playersByRole.get(role.id) ?? []).map((player) => <div key={player.id} className="w-1/3 sm:w-1/4"><PlayerMini player={player} onSelect={() => openPlayerCard(player)} /></div>)}</div>
+                                                <div className={role.id === "defender" || role.id === "pivot" ? "mx-auto grid w-fit max-w-full grid-cols-4 justify-items-center" : "flex w-full max-w-[320px] flex-wrap justify-center"}>{(playersByRole.get(role.id) ?? []).map((player) => <div key={player.id} className={role.id === "defender" || role.id === "pivot" ? "w-16 min-w-0" : "w-1/3 sm:w-1/4"}><PlayerMini player={player} onSelect={() => openPlayerCard(player)} /></div>)}</div>
                                                 {playersByRole.get(role.id)?.length === 0 ? <span className="bg-black/35 px-2 py-1 text-center text-[8px] text-white/80">Sin asignar</span> : null}
                                             </div>
                                         ))}
