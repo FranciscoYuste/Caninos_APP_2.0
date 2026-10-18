@@ -47,7 +47,7 @@ Conecta el repositorio de GitHub a **Workers & Pages → Create application → 
 - **Deploy command:** `npx wrangler deploy`
 - **Framework preset:** `None` / `Other` si aparece. El proyecto ya incluye `wrangler.jsonc`; no lo configures como Pages ni como exportación estática.
 
-El nombre del Worker configurado es `caninos-fc` en `wrangler.jsonc`. Puedes cambiarlo antes del primer despliegue si quieres otro nombre.
+El nombre del Worker configurado es `caninos-app-2-0` en `wrangler.jsonc`, para que coincida con el nombre que Workers Builds asigna a este repositorio. El vínculo interno `WORKER_SELF_REFERENCE` usa el mismo nombre.
 
 ### Variables de entorno y secretos
 

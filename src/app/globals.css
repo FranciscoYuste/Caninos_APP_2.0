@@ -238,16 +238,16 @@ input {
 }
 
 .intro-hotspot--enter {
-    top: 76%;
-    left: 14%;
-    width: 72%;
+    top: 62%;
+    left: 26%;
+    width: 50%;
     height: 8%;
 }
 
 .intro-hotspot--admin {
-    top: 86%;
-    left: 14%;
-    width: 72%;
+    top: 72%;
+    left: 30%;
+    width: 40%;
     height: 8%;
 }
 
