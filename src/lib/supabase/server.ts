@@ -1,14 +1,14 @@
 import { createServerClient, type SetAllCookies } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { getSupabaseEnvironment } from "@/lib/supabase/environment";
 
 export async function createSupabaseServerClient() {
     const cookieStore = await cookies();
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+    const { url, publicKey } = getSupabaseEnvironment();
 
-    if (!url || !key) throw new Error("Faltan las variables públicas de Supabase.");
+    if (!url || !publicKey) throw new Error("Faltan las variables públicas de Supabase en Cloudflare o .env.local.");
 
-    return createServerClient(url, key, {
+    return createServerClient(url, publicKey, {
         cookies: {
             getAll: () => cookieStore.getAll(),
             setAll: (cookiesToSet: Parameters<SetAllCookies>[0]) => {

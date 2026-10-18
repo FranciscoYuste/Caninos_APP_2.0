@@ -37,8 +37,8 @@ type CallupRecord = {
 };
 
 export default async function TeamPage() {
-    const supabase = await createSupabaseServerClient();
     try {
+        const supabase = await createSupabaseServerClient();
         const temporada = "2026-2027";
         const [playerResult, matchResult, tableResult, callupResult, statsResult] = await Promise.all([
             supabase.from("jugadores").select("id,nombre,posicion,dorsal,foto_url,video_url").eq("activo", true).order("dorsal", { nullsFirst: false }),
@@ -47,7 +47,25 @@ export default async function TeamPage() {
             supabase.from("convocatorias").select("partido_id,jugador_id,convocado,partidos!inner(temporada,fase)").eq("partidos.temporada", temporada).eq("partidos.fase", "campeon_invierno"),
             supabase.from("estadisticas").select("jugador_id,goles,asistencias,penaltis_marcados,penaltis_tirados,dobles_penaltis_marcados,dobles_penaltis_tirados,faltas_directas_marcadas,amarillas,rojas,partidos!inner(jornada,fecha,fecha_prevista,equipo_local,equipo_visitante,temporada,fase)").eq("partidos.temporada", temporada).eq("partidos.fase", "campeon_invierno"),
         ]);
-        if (playerResult.error || matchResult.error || tableResult.error || callupResult.error || statsResult.error) throw new Error("No se pudieron consultar las tablas de Supabase.");
+        const queryErrors = [
+            { table: "jugadores", error: playerResult.error },
+            { table: "partidos", error: matchResult.error },
+            { table: "clasificacion", error: tableResult.error },
+            { table: "convocatorias", error: callupResult.error },
+            { table: "estadisticas", error: statsResult.error },
+        ].flatMap(({ table, error }) => error
+            ? [{
+                table,
+                code: error.code,
+                message: error.message,
+                details: error.details,
+                hint: error.hint,
+            }]
+            : []);
+        if (queryErrors.length) {
+            console.error("Supabase dashboard queries failed", queryErrors);
+            throw new Error("No se pudieron consultar las tablas de Supabase.");
+        }
 
         const seasonStats = new Map<string, PlayerSeasonTotals>();
         const matchStats = new Map<string, Player["matchStats"]>();
@@ -162,7 +180,9 @@ export default async function TeamPage() {
             points: team.puntos,
         }));
         return <TeamDashboard squad={squad} results={results} table={table} dataState="ready" />;
-    } catch {
+    } catch (error) {
+        if (error instanceof Error && "digest" in error && error.digest === "DYNAMIC_SERVER_USAGE") throw error;
+        console.error("Failed to load team dashboard", error);
         return <TeamDashboard squad={[]} results={[]} table={[]} dataState="error" />;
     }
 }

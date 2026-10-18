@@ -1,11 +1,11 @@
 import { createClient } from "@supabase/supabase-js";
+import { getSupabaseEnvironment } from "@/lib/supabase/environment";
 
 export function createSupabaseAdminClient() {
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-    if (!url || !serviceKey) throw new Error("Falta configurar Supabase en el servidor.");
+    const { url, serviceRoleKey } = getSupabaseEnvironment();
+    if (!url || !serviceRoleKey) throw new Error("Falta configurar Supabase en el servidor.");
 
-    return createClient(url, serviceKey, {
+    return createClient(url, serviceRoleKey, {
         auth: { autoRefreshToken: false, persistSession: false },
     });
 }
