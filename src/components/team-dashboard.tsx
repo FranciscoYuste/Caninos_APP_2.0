@@ -26,35 +26,38 @@ type CompetitionId = "winter" | "promotion" | "cup";
 
 function PlayerCard({ player, index }: { player: Player; index: number }) {
     return (
-        <article id={`player-${player.id}`} className="reveal group scroll-mt-24 overflow-hidden border border-[var(--line)] bg-[var(--panel)]" style={{ animationDelay: `${index * 80}ms` }}>
-            <div className="player-card-media relative h-52 overflow-hidden player-photo">
+        <article id={`player-${player.id}`} className="player-card-shell reveal group scroll-mt-24 overflow-hidden" style={{ animationDelay: `${index * 80}ms` }}>
+            <div className="player-card-media player-photo relative h-64 overflow-hidden sm:h-60">
                 {player.video
                     ? <video className="h-full w-full object-cover" src={player.video} poster={player.photo ?? undefined} controls playsInline preload="none" aria-label={`Vídeo de ${player.name}`} />
                     : player.photo
                         ? <Image src={player.photo} alt={`Foto de ${player.name}`} width={600} height={416} unoptimized className="h-full w-full object-cover" />
                         : null}
-                <span className="absolute left-4 top-3 font-mono text-xs text-white/60">PLANTILLA / 2026-2027</span>
-                <span className="absolute bottom-1 right-4 font-black leading-none text-white/15" style={{ fontSize: 112 }}>{player.number ?? "—"}</span>
-                <span className="absolute bottom-4 left-4 grid size-11 place-items-center border border-white/30 bg-black/20 text-sm font-bold">{player.name.split(" ").map((part) => part[0]).join("")}</span>
-            </div>
-            <div className="p-4">
-                <div className="flex items-start justify-between gap-2">
-                    <div><p className="text-lg font-bold">{player.name}</p><p className="mt-1 text-xs uppercase tracking-[0.12em] text-[var(--muted)]">{player.position}</p></div>
-                    {player.number !== null ? <span className="border border-[var(--line)] px-2 py-1 font-mono text-xs text-[var(--lime)]">#{player.number}</span> : null}
+                <span className="player-card-number absolute left-3 top-3 grid min-w-12 place-items-center px-3 py-2 font-mono text-lg font-black">
+                    {player.number === null ? "—" : `#${player.number}`}
+                </span>
+                <span className="player-card-crest absolute right-3 top-3 grid size-14 place-items-center rounded-full">
+                    <Image src="/fotos/escudo.png" alt="Escudo de Bayern D.L. Caninos" width={48} height={48} className="size-11 object-contain" />
+                </span>
+                <div className="player-card-caption absolute inset-x-0 bottom-0 px-4 pb-4 pt-14">
+                    <p className="text-xl font-black uppercase leading-tight text-white sm:text-lg">{player.name}</p>
+                    <p className="mt-1 text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--lime)]">{player.position}</p>
                 </div>
-                <div className="mt-5 grid grid-cols-4 border-t border-[var(--line)] pt-3">
+            </div>
+            <div className="player-card-stats p-4">
+                <div className="grid grid-cols-4 divide-x divide-white/10">
                     {[{ value: player.goals, label: "GOL" }, { value: player.assists, label: "ASI" }, { value: player.games, label: "CONV." }, { value: player.cards, label: "TARJ." }].map((stat) => (
-                        <div key={stat.label}><p className="font-mono text-lg font-semibold">{stat.value}</p><p className="mt-1 text-[9px] tracking-[0.12em] text-[var(--muted)]">{stat.label}</p></div>
+                        <div key={stat.label} className="px-1 text-center first:pl-0 last:pr-0"><p className="font-mono text-base font-bold text-white sm:text-lg">{stat.value}</p><p className="mt-1 text-[8px] font-bold tracking-[0.1em] text-[var(--muted)]">{stat.label}</p></div>
                     ))}
                 </div>
-                <div className="mt-3 flex flex-wrap gap-2 border-t border-[var(--line)] pt-3 text-[10px] text-[var(--muted)]">
+                <div className="mt-4 flex flex-wrap gap-1.5 border-t border-white/10 pt-3 text-[9px] text-[var(--muted)]">
                     <span className="border border-[var(--line)] px-2 py-1">PEN {player.penalties}</span>
                     <span className="border border-[var(--line)] px-2 py-1">DOBLES {player.doublePenalties}</span>
                     <span className="border border-[var(--line)] px-2 py-1">FALTAS DIR. {player.directFreeKicks}</span>
                 </div>
                 {player.matchStats?.length ? (
-                    <details className="mt-3 border-t border-[var(--line)] pt-3">
-                        <summary className="cursor-pointer text-[10px] font-bold uppercase tracking-[0.1em] text-[var(--lime)]">Detalle por partido</summary>
+                    <details className="mt-3 border-t border-white/10 pt-3">
+                        <summary className="cursor-pointer text-[9px] font-bold uppercase tracking-[0.1em] text-[var(--lime)]">Detalle por partido</summary>
                         <div className="mt-3 space-y-3">
                             {player.matchStats.map((match) => (
                                 <div key={match.label} className="border-l border-[var(--lime)]/50 pl-3 text-[10px] leading-5 text-[var(--muted)]">

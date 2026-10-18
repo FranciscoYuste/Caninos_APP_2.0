@@ -34,6 +34,31 @@ SUPABASE_SERVICE_ROLE_KEY=TU-CLAVE-SECRETA-DE-SERVIDOR
 
 La clave de servidor **nunca** va en una variable `NEXT_PUBLIC_`, ni se pega en el chat ni en código del navegador. `.env.local` está excluido de Git. Reinicia `npm run dev` después de crear o cambiar este archivo.
 
+## Desplegar en Cloudflare Workers
+
+El proyecto usa `@opennextjs/cloudflare` para adaptar Next.js al runtime de Workers. No publiques la carpeta `out` ni uses solo `npm run build`: el build para Cloudflare se genera con `npm run build:cloudflare`.
+
+### Configurar Workers Builds
+
+Conecta el repositorio de GitHub a **Workers & Pages → Create application → Workers → Import a repository** y configura:
+
+- **Root directory:** `/`
+- **Build command:** `npm run build:cloudflare`
+- **Deploy command:** `npx wrangler deploy`
+- **Framework preset:** `None` / `Other` si aparece. El proyecto ya incluye `wrangler.jsonc`; no lo configures como Pages ni como exportación estática.
+
+El nombre del Worker configurado es `caninos-fc` en `wrangler.jsonc`. Puedes cambiarlo antes del primer despliegue si quieres otro nombre.
+
+### Variables de entorno y secretos
+
+En la configuración del Worker, añade `NEXT_PUBLIC_SUPABASE_URL` y `NEXT_PUBLIC_SUPABASE_ANON_KEY` como variables tanto para el entorno de **build** como para el entorno **Production** del Worker. Next.js incorpora esas dos variables públicas en el bundle del navegador durante el build.
+
+Añade `SUPABASE_SERVICE_ROLE_KEY` únicamente como **secret** del Worker, nunca como variable `NEXT_PUBLIC_` ni en el repositorio. La clave de servicio se usa solo en endpoints administrativos del servidor. Configura también las variables públicas en el entorno Production del Worker para que estén disponibles en el servidor.
+
+Para probar en el runtime local de Workers, copia `.dev.vars.example` como `.dev.vars`, reemplaza los valores por los de Supabase y ejecuta `npm run preview`. `.dev.vars` está excluido de Git. Para desarrollo normal con `npm run dev`, sigue usando `.env.local`.
+
+Tras conectar las variables en Cloudflare, cada push a la rama de producción ejecutará el build y despliegue. También puedes usar `npm run preview` para probar localmente o `npm run deploy` desde una terminal autenticada con Wrangler.
+
 ## Cargar los primeros datos
 
 1. Ejecuta las migraciones pendientes en orden desde **SQL Editor**. No vuelvas a ejecutar migraciones que ya aplicaste.
