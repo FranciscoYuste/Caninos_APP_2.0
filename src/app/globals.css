@@ -198,6 +198,10 @@ input {
     background: #050605;
 }
 
+.intro-desktop {
+    display: none;
+}
+
 .intro-frame {
     position: relative;
     width: min(100vw, 460px);
@@ -309,4 +313,94 @@ input {
     border: 1px solid var(--line);
     padding: 10px 14px;
     color: var(--lime);
+}
+
+@media (min-width: 768px) {
+    .intro-viewport {
+        display: none;
+    }
+
+    .intro-desktop {
+        display: grid;
+        min-height: 100vh;
+        min-height: 100dvh;
+        place-items: center;
+        padding: 48px;
+        background:
+            linear-gradient(90deg, #080a08e8 0%, #080a08b8 55%, #080a0870 100%),
+            url("/fotos/Campo.jpg") center / cover;
+    }
+
+    .intro-desktop-content {
+        width: min(100%, 960px);
+    }
+
+    .intro-desktop-kicker {
+        color: var(--lime);
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+    }
+
+    .intro-desktop h1 {
+        margin: 20px 0 0;
+        font-size: clamp(48px, 8vw, 96px);
+        font-weight: 900;
+        letter-spacing: -0.06em;
+        line-height: 0.95;
+        text-transform: uppercase;
+    }
+
+    .intro-desktop h1 span {
+        color: var(--lime);
+    }
+
+    .intro-desktop-description {
+        max-width: 560px;
+        margin-top: 24px;
+        color: var(--muted);
+        font-size: 16px;
+        line-height: 1.6;
+    }
+
+    .intro-desktop-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 32px;
+    }
+
+    .intro-desktop-enter,
+    .intro-desktop-admin {
+        display: inline-flex;
+        min-height: 48px;
+        align-items: center;
+        justify-content: center;
+        padding: 0 22px;
+        font-size: 12px;
+        font-weight: 900;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        transition: background-color 160ms ease, color 160ms ease, border-color 160ms ease;
+    }
+
+    .intro-desktop-enter {
+        background: var(--lime);
+        color: var(--ink);
+    }
+
+    .intro-desktop-enter:hover {
+        background: var(--paper);
+    }
+
+    .intro-desktop-admin {
+        border: 1px solid #ffffff45;
+        color: var(--paper);
+    }
+
+    .intro-desktop-admin:hover {
+        border-color: var(--lime);
+        color: var(--lime);
+    }
 }
