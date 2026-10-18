@@ -16,7 +16,7 @@
   ],
   "workers_dev": true,
   "vars": {
-    "NEXT_PUBLIC_SUPABASE_URL": "https://vvhkuuuwpfbyqpthetos.supabase.co",
-    "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY": "sb_publishable_KKUvsjeLk_gGNfOpdcg9aQ_4R0NTNyV"
+    "NEXT_PUBLIC_SUPABASE_URL": "https://qhqlfhoboklqmptlscpl.supabase.co",
+    "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY": "sb_publishable_wu8UwZX-YHAlBi7Q0qWgGQ_qGM_C28y"
   }
 }
