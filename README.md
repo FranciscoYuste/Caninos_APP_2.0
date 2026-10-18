@@ -24,15 +24,15 @@ No hace falta crear las tablas a mano. En el proyecto Supabase, abre **SQL Edito
 
 La migración `202610170001_public_dashboard.sql` permite a visitantes sin cuenta consultar jugadores, partidos, estadísticas y clasificación. La migración `202610180001_first_phase_calendar.sql` separa los datos por fase y grupo e inserta los 66 partidos de Campeón de Invierno. La migración `202610180002_confirmed_schedule_and_callups.sql` conserva las fechas del calendario como previsiones, añade convocatorias y separa los resultados del horario confirmado. La migración `202610180003_players_and_match_statistics.sql` carga la lista inicial de 15 jugadores sin inventar dorsal o posición, permite vídeos en sus fichas y añade estadísticas individuales. La migración `202610180004_import_player_roster.sql` habilita la actualización segura de dorsales y posiciones desde el CSV de jugadores. La migración `202610180005_pending_callups.sql` permite importar convocatorias antes de confirmar fecha, hora y campo. La migración `202610180006_convocados_without_appearances.sql` elimina el campo de participación y permite registrar convocados y no convocados. La migración `202610180007_competition_scoped_statistics.sql` aplica también el aislamiento por fase y grupo a las estadísticas. Ejecuta todas las migraciones pendientes en orden.
 
-En **Project Settings → API** copia la Project URL y la clave publicable (`anon` en proyectos que muestran las claves antiguas; la clave `service_role`/secret es solo para el servidor). En la carpeta raíz del proyecto, crea `.env.local` junto a `package.json`:
+En **Project Settings → API** copia la Project URL y la clave publicable (`sb_publishable_...`; en proyectos antiguos puede aparecer como `anon`). En la carpeta raíz del proyecto, crea `.env.local` junto a `package.json`:
 
 ```dotenv
 NEXT_PUBLIC_SUPABASE_URL=https://TU-PROJECT-REF.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=TU-CLAVE-PUBLICABLE
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=TU-CLAVE-PUBLICABLE
 SUPABASE_SERVICE_ROLE_KEY=TU-CLAVE-SECRETA-DE-SERVIDOR
 ```
 
-La clave de servidor **nunca** va en una variable `NEXT_PUBLIC_`, ni se pega en el chat ni en código del navegador. `.env.local` está excluido de Git. Reinicia `npm run dev` después de crear o cambiar este archivo.
+La clave de servidor **nunca** va en una variable `NEXT_PUBLIC_`, ni se pega en el chat ni en código del navegador. `.env.local` está excluido de Git. El código también acepta `NEXT_PUBLIC_SUPABASE_ANON_KEY` para proyectos o configuraciones anteriores. Reinicia `npm run dev` después de crear o cambiar este archivo.
 
 ## Desplegar en Cloudflare Workers
 
@@ -47,11 +47,11 @@ Conecta el repositorio de GitHub a **Workers & Pages → Create application → 
 - **Deploy command:** `npx wrangler deploy`
 - **Framework preset:** `None` / `Other` si aparece. El proyecto ya incluye `wrangler.jsonc`; no lo configures como Pages ni como exportación estática.
 
-El nombre del Worker configurado es `caninos-app-2-0` en `wrangler.jsonc`, para que coincida con el nombre que Workers Builds asigna a este repositorio. El vínculo interno `WORKER_SELF_REFERENCE` usa el mismo nombre.
+El nombre del Worker configurado es `bayerndeloscaninos` en `wrangler.jsonc`. El vínculo interno `WORKER_SELF_REFERENCE` usa el mismo nombre; configura Workers Builds para que despliegue este mismo Worker.
 
 ### Variables de entorno y secretos
 
-En la configuración del Worker, añade `NEXT_PUBLIC_SUPABASE_URL` y `NEXT_PUBLIC_SUPABASE_ANON_KEY` como variables tanto para el entorno de **build** como para el entorno **Production** del Worker. Next.js incorpora esas dos variables públicas en el bundle del navegador durante el build.
+En la configuración de Workers Builds, añade `NEXT_PUBLIC_SUPABASE_URL` y `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` como variables para el entorno de **build**. En el Worker, configura también esas variables en **Production**. Next.js incorpora las variables públicas en el bundle del navegador durante el build.
 
 Añade `SUPABASE_SERVICE_ROLE_KEY` únicamente como **secret** del Worker, nunca como variable `NEXT_PUBLIC_` ni en el repositorio. La clave de servicio se usa solo en endpoints administrativos del servidor. Configura también las variables públicas en el entorno Production del Worker para que estén disponibles en el servidor.
 
