@@ -91,7 +91,7 @@ function PlayerCard({ player, index }: { player: Player; index: number }) {
                     : player.photo
                         ? <Image src={player.photo} alt={`Foto de ${player.name}`} width={600} height={416} unoptimized className="h-full w-full object-cover" />
                         : null}
-                <span className="player-card-number absolute left-2 top-3 font-sans text-[9rem] font-black italic leading-[0.75] sm:text-[11rem]">
+                <span className="player-card-number absolute left-2 top-3 font-sans text-[6rem] font-black italic leading-[0.75] sm:text-[8rem]">
                     {player.number ?? "—"}
                 </span>
                 <span className="player-card-crest absolute right-3 top-3">
