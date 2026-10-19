@@ -1,0 +1,18 @@
+{
+  "name": "Bayern D.L. Caninos",
+  "short_name": "Caninos",
+  "description": "Plantilla, calendario, resultados y estadísticas de Bayern D.L. Caninos.",
+  "start_url": "/equipo",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#111311",
+  "theme_color": "#111311",
+  "icons": [
+    {
+      "src": "/fotos/escudo.png",
+      "sizes": "1280x1280",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

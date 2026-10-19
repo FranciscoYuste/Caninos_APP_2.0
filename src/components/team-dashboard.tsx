@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useRef, useState } from "react";
-import { Activity, ArrowUpRight, CalendarDays, ClipboardList, Shield, Trophy, Users } from "lucide-react";
+import { Activity, Ambulance, ArrowUpRight, CalendarDays, ClipboardList, Cross, Shield, Star, Trophy, Users } from "lucide-react";
 
 export type Player = {
     id: string;
@@ -16,13 +16,75 @@ export type Player = {
     penalties: string;
     doublePenalties: string;
     directFreeKicks: number;
+    injured: boolean;
+    injuryDescription?: string | null;
     photo?: string | null;
     video?: string | null;
     matchStats?: Array<{ label: string; goals: number; assists: number; penalties: string; doublePenalties: string; directFreeKicks: number; cards: string }>;
 };
-export type MatchItem = { key: string; date: string; home: string; away: string; score: string; status: string; callupPhotoUrl?: string | null; callups?: Array<{ name: string; calledUp: boolean }> };
+export type MatchItem = { key: string; date: string; home: string; away: string; score: string; finalScore?: string | null; status: string; callupPhotoUrl?: string | null; callups?: Array<{ name: string; calledUp: boolean }> };
+export type KatsuCard = { key: string; jornada: number; home: string; away: string; score: string | null; player: Pick<Player, "id" | "name" | "position" | "number" | "photo"> };
 export type Standing = { position: number; name: string; played: number; won: number; drawn: number; lost: number; goalsFor: number; goalsAgainst: number; goalDifference: number; points: number };
 type CompetitionId = "winter" | "promotion" | "cup";
+
+function KatsuPlayerCard({ card }: { card: KatsuCard }) {
+    const [revealed, setRevealed] = useState(false);
+
+    return (
+        <button
+            type="button"
+            aria-pressed={revealed}
+            aria-label={`${revealed ? "Ocultar" : "Revelar"} carta KATSU de ${card.player.name}, jornada ${card.jornada}`}
+            onClick={() => setRevealed((value) => !value)}
+            className="katsu-card-shell group relative block aspect-[3/4] w-full text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--lime)] [perspective:1400px]"
+        >
+            <span className={`katsu-card-inner absolute inset-0 ${revealed ? "is-revealed" : ""}`}>
+                <span className="katsu-card-face katsu-card-front absolute inset-0 flex flex-col overflow-hidden border border-[var(--lime)]/70 bg-[radial-gradient(ellipse_at_50%_28%,#55592c_0%,#25291d_36%,#111311_80%)] p-4 shadow-[0_16px_50px_#0008] [backface-visibility:hidden] sm:p-6">
+                    <span className="pointer-events-none absolute inset-2 border border-white/15" />
+                    <span className="katsu-card-orbit pointer-events-none absolute -right-12 top-16 size-48 rounded-full border border-[var(--lime)]/15" />
+                    <span className="katsu-card-orbit katsu-card-orbit-inner pointer-events-none absolute -right-7 top-21 size-36 rounded-full border border-[var(--lime)]/20" />
+                    <span className="pointer-events-none absolute -left-16 top-1/3 h-px w-[150%] rotate-[-28deg] bg-gradient-to-r from-transparent via-[var(--lime)]/20 to-transparent" />
+                    <span className="relative flex items-center justify-between text-xs font-bold uppercase tracking-[0.14em] text-[var(--lime)] sm:text-xs sm:tracking-[0.2em]">
+                        <span>Temporada 2026—2027</span><Star size={21} fill="currentColor" />
+                    </span>
+                    <span className="relative mt-2 flex justify-center">
+                        <Image src="/fotos/escudo.png" alt="Escudo de Bayern D.L. Caninos" width={76} height={76} className="size-[4.5rem] object-contain drop-shadow-[0_0_12px_#f2cf1870] sm:size-20" />
+                    </span>
+                    <span className="relative my-auto flex flex-col items-center text-center">
+                        <span className="text-6xl font-black uppercase leading-[0.9] tracking-[-0.06em] text-white sm:text-6xl">Jugador</span>
+                        <span className="mt-1 text-[clamp(4.5rem,20vw,6rem)] font-black uppercase leading-[0.78] tracking-[-0.07em] text-[var(--lime)] drop-shadow-[0_4px_18px_#f2cf1855] sm:text-8xl">KATSU</span>
+                        <span className="mt-5 border-t border-white/20 px-5 pt-3 text-center sm:mt-6 sm:pt-4">
+                            <span className="block text-xs font-bold uppercase tracking-[0.2em] text-white/65 sm:text-sm">Jornada</span>
+                            <span className="mt-1 block font-mono text-6xl font-black leading-none text-white sm:text-7xl">{String(card.jornada).padStart(2, "0")}</span>
+                        </span>
+                    </span>
+                    <span className="relative mt-3 flex flex-col items-center gap-2 border-t border-white/20 pt-3 text-center sm:mt-4 sm:pt-4">
+                        <span className="max-w-full truncate text-sm font-bold text-white/85 sm:text-sm">{card.home} <span className="text-white/50">vs</span> {card.away}</span>
+                        <span className="font-mono text-xl font-black tracking-wide text-white sm:text-2xl">{card.score ?? "Resultado pendiente"}</span>
+                    </span>
+                    <span className="relative mt-2 flex items-center justify-center gap-2 text-[9px] font-bold uppercase tracking-[0.14em] text-[var(--lime)] sm:text-[10px]"><span className="size-1.5 rounded-full bg-[var(--lime)]" /> Pulsa para descubrir</span>
+                </span>
+                <span className="katsu-card-face katsu-card-back absolute inset-0 flex flex-col overflow-hidden border border-[var(--lime)]/75 bg-[#171a15] shadow-[0_16px_50px_#0008] [backface-visibility:hidden] [transform:rotateY(180deg)]">
+                    <span className="relative min-h-0 flex-1 overflow-hidden bg-[radial-gradient(ellipse_at_50%_30%,#55592c,#1a1d1a_74%)]">
+                        {card.player.photo
+                            ? <Image src={card.player.photo} alt={`Foto de ${card.player.name}`} fill unoptimized sizes="(max-width: 768px) 100vw, 33vw" className="katsu-card-player-image object-cover object-top" />
+                            : <span className="absolute inset-0 grid place-items-center font-black text-8xl text-[var(--lime)]">{card.player.name.split(" ").map((part) => part[0]).join("").slice(0, 3)}</span>}
+                        <span className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#111311] via-transparent to-black/20" />
+                        <span className="player-card-number absolute left-2 top-3 font-sans text-7xl font-black italic leading-[0.75] sm:left-3 sm:text-6xl">{card.player.number ?? "—"}</span>
+                        <span className="player-card-crest absolute right-2 top-2 sm:right-3 sm:top-3">
+                            <Image src="/fotos/escudo.png" alt="Escudo de Bayern D.L. Caninos" width={80} height={80} className="size-16 object-contain drop-shadow-lg sm:size-20" />
+                        </span>
+                        <span className="absolute inset-x-0 bottom-0 px-4 pb-5 pt-16 sm:px-5 sm:pb-6">
+                            <span className="block text-[1.65rem] font-black uppercase leading-tight tracking-[0.08em] text-[var(--lime)] sm:text-lg sm:tracking-[0.12em]">Jugador KATSU · J{card.jornada}</span>
+                            <span className="mt-1 block text-[2.75rem] font-black uppercase leading-tight text-white sm:text-3xl">{card.player.name}</span>
+                            <span className="mt-2 block text-lg font-bold uppercase tracking-[0.16em] text-white/85 sm:text-sm">{card.player.position}</span>
+                        </span>
+                    </span>
+                </span>
+            </span>
+        </button>
+    );
+}
 
 function PlayerVideo({ player }: { player: Player }) {
     const videoRef = useRef<HTMLVideoElement>(null);
@@ -84,7 +146,7 @@ function PlayerVideo({ player }: { player: Player }) {
 
 function PlayerCard({ player, index }: { player: Player; index: number }) {
     return (
-        <article id={`player-${player.id}`} className="player-card-shell reveal group scroll-mt-24 overflow-hidden" style={{ animationDelay: `${index * 80}ms` }}>
+        <article id={`player-${player.id}`} className="player-card-shell reveal group w-full scroll-mt-24 overflow-hidden sm:w-[calc(50%-0.5rem)] lg:w-[calc(25%-0.75rem)]" style={{ animationDelay: `${index * 80}ms` }}>
             <div className={`player-card-media relative aspect-[4/5] overflow-hidden ${player.video ? "bg-black" : "player-photo"}`}>
                 {player.video
                     ? <PlayerVideo player={player} />
@@ -97,6 +159,7 @@ function PlayerCard({ player, index }: { player: Player; index: number }) {
                 <span className="player-card-crest absolute right-3 top-3">
                     <Image src="/fotos/escudo.png" alt="Escudo de Bayern D.L. Caninos" width={80} height={80} className="size-20 object-contain" />
                 </span>
+                {player.injured ? <span className="absolute right-4 top-24 z-[2] inline-flex items-center gap-1.5 border border-red-300/70 bg-red-950/85 px-2 py-1 text-[9px] font-black uppercase text-red-100"><Cross size={13} strokeWidth={3} /> Lesionado</span> : null}
                 <div className="player-card-caption absolute inset-x-0 bottom-0 px-4 pb-4 pt-14">
                     <p className="text-xl font-black uppercase leading-tight text-white sm:text-lg">{player.name}</p>
                     <p className="mt-1 text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--lime)]">{player.position}</p>
@@ -106,7 +169,7 @@ function PlayerCard({ player, index }: { player: Player; index: number }) {
                 <div className="grid grid-cols-4 divide-x divide-white/15">
                     {[{ value: player.goals, label: "GOL" }, { value: player.assists, label: "ASI" }, { value: player.games, label: "CONV." }, { value: player.cards, label: "TARJ." }].map((stat) => (
                         <div key={stat.label} className="flex min-h-20 min-w-0 flex-col items-center justify-center gap-2 px-1 text-center">
-                            <p className="whitespace-nowrap font-mono text-2xl font-black leading-none tabular-nums text-white sm:text-3xl">{stat.value}</p>
+                            <p className={`whitespace-nowrap font-mono text-2xl font-black leading-none tabular-nums text-white ${stat.label === "TARJ." ? "md:text-base md:tracking-[-0.08em] lg:text-lg" : "sm:text-3xl"}`}>{stat.value}</p>
                             <p className="whitespace-nowrap text-[8px] font-bold tracking-[0.12em] text-[var(--muted)]">{stat.label}</p>
                         </div>
                     ))}
@@ -137,19 +200,20 @@ function PlayerCard({ player, index }: { player: Player; index: number }) {
 
 function PlayerMini({ player, onSelect }: { player: Player; onSelect: () => void }) {
     return (
-        <button type="button" onClick={onSelect} aria-label={`Ver ficha de ${player.name}, ${player.position}`} className="group flex w-full min-w-0 flex-col items-center gap-1 rounded-sm px-0.5 py-1 text-center transition hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--lime)]">
+        <button type="button" onClick={onSelect} aria-label={`Ver ficha de ${player.name}, ${player.position}${player.injured ? ", lesionado" : ""}`} className="group flex w-full min-w-0 flex-col items-center gap-1 rounded-sm px-0.5 py-1 text-center transition hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--lime)]">
             <span className={`relative grid size-14 shrink-0 place-items-center text-sm font-bold text-white transition group-hover:scale-110 ${player.photo ? "" : "overflow-hidden rounded-full border border-white/50 bg-[#343a32] group-hover:border-[var(--lime)]"}`}>
                 {player.photo ? <Image src={player.photo} alt="" fill sizes="56px" unoptimized className="object-contain" /> : player.name.split(" ").map((part) => part[0]).join("")}
+                {player.injured ? <span className="absolute -right-1 -top-1 grid size-6 place-items-center rounded-full border-2 border-[#1c2920] bg-red-600 text-white" title="Jugador lesionado"><Cross size={13} strokeWidth={3} /></span> : null}
             </span>
             <span className="max-w-full truncate text-[9px] font-semibold leading-tight text-white sm:text-[10px]">{player.name}</span>
         </button>
     );
 }
 
-function PlayerStatChart({ title, color, players }: { title: string; color: string; players: Array<{ name: string; value: number }> }) {
+function PlayerStatChart({ title, color, players, className = "" }: { title: string; color: string; players: Array<{ name: string; value: number }>; className?: string }) {
     const maxValue = Math.max(1, ...players.map((player) => player.value));
     return (
-        <article className="border border-[var(--line)] bg-[var(--panel)] p-5 sm:p-6">
+        <article className={`border border-[var(--line)] bg-[var(--panel)] p-5 sm:p-6 ${className}`}>
             <h3 className="text-sm font-bold uppercase">{title}</h3>
             <div className="mt-5 space-y-4" role="list" aria-label={`Gráfico de ${title.toLowerCase()} por jugador`}>
                 {players.map((player) => (
@@ -169,8 +233,8 @@ function PlayerStatChart({ title, color, players }: { title: string; color: stri
     );
 }
 
-export function TeamDashboard({ squad, table, results, dataState }: { squad: Player[]; table: Standing[]; results: MatchItem[]; dataState: "ready" | "error" }) {
-    const [activeMenu, setActiveMenu] = useState<"competition" | "players" | "callups" | "stats">("competition");
+export function TeamDashboard({ squad, table, results, katsuCards, dataState }: { squad: Player[]; table: Standing[]; results: MatchItem[]; katsuCards: KatsuCard[]; dataState: "ready" | "error" }) {
+    const [activeMenu, setActiveMenu] = useState<"competition" | "players" | "callups" | "stats" | "katsu" | "injuries">("competition");
     const [activeCompetition, setActiveCompetition] = useState<CompetitionId>("winter");
     const emptyMessage = dataState === "error"
         ? "No se pudieron cargar datos. Revisa la conexión y las migraciones de Supabase."
@@ -182,6 +246,8 @@ export function TeamDashboard({ squad, table, results, dataState }: { squad: Pla
         { id: "players" as const, label: "Jugadores", icon: Users },
         { id: "callups" as const, label: "Convocatorias", icon: ClipboardList },
         { id: "stats" as const, label: "Estadísticas", icon: Activity },
+        { id: "katsu" as const, label: "Jugador KATSU", icon: Star },
+        { id: "injuries" as const, label: "Lesionados", icon: Ambulance },
     ];
     const competitions: Array<{ id: CompetitionId; label: string; status: string }> = [
         { id: "winter", label: "Liga de invierno", status: "En curso" },
@@ -247,7 +313,7 @@ export function TeamDashboard({ squad, table, results, dataState }: { squad: Pla
                     <div className="flex shrink-0 flex-col items-center gap-2 sm:flex-row sm:gap-6">
                         <Image src="/fotos/escudo.png" alt="Escudo de Bayern D.L. Caninos" width={104} height={104} priority className="size-14 object-contain drop-shadow-lg sm:size-24" />
                         <div className="text-center sm:border-l sm:border-white/25 sm:pl-6 sm:text-right">
-                            <p className="font-mono text-2xl font-bold sm:text-5xl">{activeCompetition === "winter" && teamPosition ? String(teamPosition).padStart(2, "0") : "—"}<span className="text-[var(--lime)]">.</span></p>
+                            <p className="font-mono text-2xl font-bold sm:text-5xl">{activeCompetition === "winter" && teamPosition ? <>{teamPosition}<sup className="ml-0.5 text-[0.48em] text-[var(--lime)]">º</sup></> : "—"}</p>
                             <p className="mt-1 max-w-20 text-[7px] uppercase leading-tight tracking-[0.06em] text-white/65 sm:max-w-none sm:text-[10px] sm:tracking-[0.15em]">{activeCompetition === "winter" ? "en la tabla" : "clasificación pendiente"}</p>
                         </div>
                     </div>
@@ -346,17 +412,17 @@ export function TeamDashboard({ squad, table, results, dataState }: { squad: Pla
                                 {playersByRole.get("unspecified")?.length ? <div className="mt-3 border border-dashed border-white/20 p-3"><p className="mb-2 text-[9px] font-bold uppercase text-white/55">Posición por definir</p><div className="flex flex-wrap gap-2">{playersByRole.get("unspecified")?.map((player) => <div key={player.id} className="w-20"><PlayerMini player={player} onSelect={() => openPlayerCard(player)} /></div>)}</div></div> : null}
                             </div>
                         ) : null}
-                        {squad.length ? <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">{squad.map((player, index) => <PlayerCard key={player.name} player={player} index={index} />)}</div> : <p className="border-y border-[var(--line)] py-6 text-sm text-[var(--muted)]">{emptyMessage}</p>}
+                        {squad.length ? <div className="flex flex-wrap justify-center gap-4">{squad.map((player, index) => <PlayerCard key={player.name} player={player} index={index} />)}</div> : <p className="border-y border-[var(--line)] py-6 text-sm text-[var(--muted)]">{emptyMessage}</p>}
                     </section>
                 ) : null}
 
                 {activeMenu === "callups" ? (
                     <section className="py-10">
                         <div className="mb-7 text-center"><p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--lime)]">Convocatorias · Bayern D.L.Caninos</p><h2 className="mt-2 text-3xl font-black uppercase sm:text-4xl">Partido a partido</h2><p className="mx-auto mt-3 max-w-2xl text-sm leading-6 text-[var(--muted)]">Consulta quién fue convocado y quién no en cada encuentro. La hora y el campo aparecen cuando se confirman.</p></div>
-                        <div className="grid gap-4 md:grid-cols-2">{results.map((match) => {
+                        <div className="flex flex-wrap justify-center gap-4">{results.map((match) => {
                             const calledUp = match.callups?.filter((player) => player.calledUp) ?? [];
                             const notCalledUp = match.callups?.filter((player) => !player.calledUp) ?? [];
-                            return <article key={match.key} className="border border-[var(--line)] bg-[var(--panel)] p-5"><p className="font-mono text-[9px] tracking-[0.12em] text-[var(--lime)]">{match.date}</p><h3 className="mt-3 text-sm font-bold">{match.home} <span className="font-normal text-[var(--muted)]">vs</span> {match.away}</h3>{match.callupPhotoUrl ? <div className="relative mt-4 aspect-[4/3] overflow-hidden bg-black/30"><Image src={match.callupPhotoUrl} alt={`Foto del equipo: ${match.home} vs ${match.away}`} fill unoptimized sizes="(max-width: 768px) 100vw, 50vw" className="object-cover" /></div> : null}{match.callups?.length ? <><div className="mt-4"><p className="mb-2 text-[9px] font-bold uppercase tracking-[0.1em] text-[var(--lime)]">Convocados · {calledUp.length}</p>{calledUp.length ? <div className="flex flex-wrap gap-2">{calledUp.map((player) => <span key={player.name} className="border border-[var(--lime)]/40 px-2 py-1 text-[10px] text-[var(--lime)]">{player.name}</span>)}</div> : <p className="text-[10px] text-[var(--muted)]">Ninguno indicado todavía.</p>}</div><div className="mt-4 border-t border-[var(--line)] pt-3"><p className="mb-2 text-[9px] font-bold uppercase tracking-[0.1em] text-[var(--muted)]">No convocados · {notCalledUp.length}</p>{notCalledUp.length ? <div className="flex flex-wrap gap-2">{notCalledUp.map((player) => <span key={player.name} className="border border-[var(--line)] px-2 py-1 text-[10px] text-[var(--muted)]">{player.name}</span>)}</div> : <p className="text-[10px] text-[var(--muted)]">Todos los jugadores están convocados.</p>}</div></> : <p className="mt-4 border-t border-[var(--line)] pt-4 text-xs text-[var(--muted)]">Convocatoria todavía no publicada.</p>}</article>;
+                            return <article key={match.key} className="w-full border border-[var(--line)] bg-[var(--panel)] p-5 md:w-[calc(50%-0.5rem)]"><p className="font-mono text-[9px] tracking-[0.12em] text-[var(--lime)]">{match.date}</p><h3 className="mt-3 text-sm font-bold">{match.home} <span className="font-normal text-[var(--muted)]">vs</span> {match.away}</h3>{match.finalScore ? <p className="mt-3 text-xs uppercase tracking-[0.1em] text-[var(--muted)]">Resultado <span className="ml-2 font-mono text-lg font-black tracking-normal text-white">{match.finalScore}</span></p> : null}{match.callupPhotoUrl ? <div className="relative mt-4 aspect-[4/3] overflow-hidden bg-black/30"><Image src={match.callupPhotoUrl} alt={`Foto del equipo: ${match.home} vs ${match.away}`} fill unoptimized sizes="(max-width: 768px) 100vw, 50vw" className="object-cover" /></div> : null}{match.callups?.length ? <><div className="mt-4"><p className="mb-2 text-[9px] font-bold uppercase tracking-[0.1em] text-[var(--lime)]">Convocados · {calledUp.length}</p>{calledUp.length ? <div className="flex flex-wrap gap-2">{calledUp.map((player) => <span key={player.name} className="border border-[var(--lime)]/40 px-2 py-1 text-[10px] text-[var(--lime)]">{player.name}</span>)}</div> : <p className="text-[10px] text-[var(--muted)]">Ninguno indicado todavía.</p>}</div><div className="mt-4 border-t border-[var(--line)] pt-3"><p className="mb-2 text-[9px] font-bold uppercase tracking-[0.1em] text-[var(--muted)]">No convocados · {notCalledUp.length}</p>{notCalledUp.length ? <div className="flex flex-wrap gap-2">{notCalledUp.map((player) => <span key={player.name} className="border border-[var(--line)] px-2 py-1 text-[10px] text-[var(--muted)]">{player.name}</span>)}</div> : <p className="text-[10px] text-[var(--muted)]">Todos los jugadores están convocados.</p>}</div></> : <p className="mt-4 border-t border-[var(--line)] pt-4 text-xs text-[var(--muted)]">Convocatoria todavía no publicada.</p>}</article>;
                         })}</div>
                         {!results.length ? <p className="border-y border-[var(--line)] py-6 text-sm text-[var(--muted)]">{emptyMessage}</p> : null}
                     </section>
@@ -365,17 +431,73 @@ export function TeamDashboard({ squad, table, results, dataState }: { squad: Pla
                 {activeMenu === "stats" ? (
                     <section className="py-10">
                         <div className="mb-7 text-center"><p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--lime)]">Temporada 2026-2027 · Bayern D.L.Caninos</p><h2 className="mt-2 text-3xl font-black uppercase sm:text-4xl">Estadísticas generales</h2><p className="mx-auto mt-3 max-w-2xl text-sm leading-6 text-[var(--muted)]">Resumen de las estadísticas individuales importadas hasta ahora.</p></div>
-                        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-                            {[{ label: "Goles", value: totals.goals }, { label: "Asistencias", value: totals.assists }, { label: "Amarillas", value: totals.yellowCards }, { label: "Rojas", value: totals.redCards }].map((stat) => <div key={stat.label} className="border border-[var(--line)] bg-[var(--panel)] p-4"><p className="font-mono text-3xl font-bold text-[var(--lime)]">{stat.value}</p><p className="mt-2 text-[9px] font-bold uppercase tracking-[0.1em] text-[var(--muted)]">{stat.label}</p></div>)}
+                        <div className="flex flex-wrap justify-center gap-3">
+                            {[{ label: "Goles", value: totals.goals }, { label: "Asistencias", value: totals.assists }, { label: "Amarillas", value: totals.yellowCards }, { label: "Rojas", value: totals.redCards }].map((stat) => <div key={stat.label} className="w-[calc(50%-0.375rem)] border border-[var(--line)] bg-[var(--panel)] p-4 sm:w-[calc(33.333%-0.5rem)] lg:w-[calc(25%-0.5625rem)]"><p className="font-mono text-3xl font-bold text-[var(--lime)]">{stat.value}</p><p className="mt-2 text-[9px] font-bold uppercase tracking-[0.1em] text-[var(--muted)]">{stat.label}</p></div>)}
                         </div>
-                        <div className="mt-5 grid gap-5 lg:grid-cols-2">
-                            <PlayerStatChart title="Goles por jugador" color="bg-[var(--lime)]" players={chartPlayers((player) => player.goals)} />
-                            <PlayerStatChart title="Asistencias por jugador" color="bg-sky-400" players={chartPlayers((player) => player.assists)} />
-                            <PlayerStatChart title="Tarjetas rojas por jugador" color="bg-rose-500" players={chartPlayers((player) => Number(player.cards.match(/\d+/g)?.[1] ?? 0))} />
-                            <PlayerStatChart title="Tarjetas amarillas por jugador" color="bg-yellow-300" players={chartPlayers((player) => Number(player.cards.match(/\d+/g)?.[0] ?? 0))} />
-                            <PlayerStatChart title="Convocatorias por jugador" color="bg-[var(--lime)]" players={chartPlayers((player) => player.games)} />
+                        <div className="mt-5 flex flex-wrap justify-center gap-5">
+                            <PlayerStatChart className="w-full lg:w-[calc(50%-0.625rem)]" title="Goles por jugador" color="bg-[var(--lime)]" players={chartPlayers((player) => player.goals)} />
+                            <PlayerStatChart className="w-full lg:w-[calc(50%-0.625rem)]" title="Asistencias por jugador" color="bg-sky-400" players={chartPlayers((player) => player.assists)} />
+                            <PlayerStatChart className="w-full lg:w-[calc(50%-0.625rem)]" title="Tarjetas rojas por jugador" color="bg-rose-500" players={chartPlayers((player) => Number(player.cards.match(/\d+/g)?.[1] ?? 0))} />
+                            <PlayerStatChart className="w-full lg:w-[calc(50%-0.625rem)]" title="Tarjetas amarillas por jugador" color="bg-yellow-300" players={chartPlayers((player) => Number(player.cards.match(/\d+/g)?.[0] ?? 0))} />
+                            <PlayerStatChart className="w-full lg:w-[calc(50%-0.625rem)]" title="Convocatorias por jugador" color="bg-[var(--lime)]" players={chartPlayers((player) => player.games)} />
                         </div>
                         {!squad.some((player) => player.goals || player.assists || player.games) ? <p className="mt-5 border border-dashed border-[var(--line)] p-4 text-xs text-[var(--muted)]">Aún no hay estadísticas importadas. Los gráficos se completarán automáticamente cuando se carguen convocatorias y estadísticas de partidos.</p> : null}
+                    </section>
+                ) : null}
+
+                {activeMenu === "katsu" ? (
+                    <section className="py-10">
+                        <div className="mb-8 text-center">
+                            <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-[var(--lime)]">Bayern D.L. Caninos · Temporada 2026—2027</p>
+                            <h2 className="mt-2 text-4xl font-black uppercase sm:text-5xl">Jugador KATSU</h2>
+                            <p className="mx-auto mt-3 max-w-2xl text-sm leading-6 text-[var(--muted)]">Un reconocimiento especial en cada partido. Pulsa la carta para descubrir quién se lleva la distinción.</p>
+                        </div>
+                        {katsuCards.length ? (
+                            <div className="mx-auto flex max-w-5xl flex-wrap justify-center gap-6">
+                                {katsuCards.map((card) => <div key={card.key} className="w-full sm:w-[calc(50%-0.75rem)] lg:w-[calc(33.333%-1rem)]"><KatsuPlayerCard card={card} /></div>)}
+                            </div>
+                        ) : (
+                            <div className="mx-auto max-w-xl border border-dashed border-[var(--line)] px-6 py-12 text-center">
+                                <Star className="mx-auto text-[var(--lime)]" size={28} />
+                                <p className="mt-4 text-sm font-bold uppercase">Todavía no hay jugadores KATSU</p>
+                                <p className="mt-2 text-xs leading-5 text-[var(--muted)]">Cuando se asigne un jugador a un partido del Bayern, su carta aparecerá aquí.</p>
+                            </div>
+                        )}
+                    </section>
+                ) : null}
+
+                {activeMenu === "injuries" ? (
+                    <section className="py-10">
+                        <div className="mb-8 text-center">
+                            <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-red-300">Parte médico · Bayern D.L. Caninos</p>
+                            <h2 className="mt-2 text-4xl font-black uppercase sm:text-5xl">Lesionados</h2>
+                            <p className="mx-auto mt-3 max-w-2xl text-sm leading-6 text-[var(--muted)]">Seguimiento de los jugadores actualmente lesionados.</p>
+                        </div>
+                        {squad.some((player) => player.injured) ? (
+                            <div className="mx-auto flex max-w-4xl flex-wrap justify-center gap-3">
+                                {squad.filter((player) => player.injured).map((player) => (
+                                    <article key={player.id} className="w-full overflow-hidden border border-red-300/30 bg-[var(--panel)] sm:w-[calc(50%-0.375rem)]">
+                                        <button type="button" onClick={() => openPlayerCard(player)} className="group flex w-full items-center gap-4 p-4 text-left transition hover:bg-white/[0.03] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--lime)]">
+                                            <span className="relative grid size-16 shrink-0 place-items-center overflow-hidden rounded-full border border-red-300/50 bg-black/30 text-lg font-black text-red-100">
+                                                {player.photo ? <Image src={player.photo} alt="" fill sizes="64px" unoptimized className="object-cover" /> : player.name.split(" ").map((part) => part[0]).join("")}
+                                            </span>
+                                            <span className="min-w-0 flex-1">
+                                                <span className="block truncate text-base font-black uppercase text-white">{player.name}</span>
+                                                <span className="mt-1 block text-xs font-bold uppercase tracking-wider text-[var(--muted)]">{player.position} · #{player.number ?? "—"}</span>
+                                            </span>
+                                            <span className="grid size-11 shrink-0 place-items-center rounded-full bg-red-600 text-white shadow-[0_0_18px_#dc262655]"><Cross size={22} strokeWidth={3} /></span>
+                                        </button>
+                                        {player.injuryDescription ? <p className="border-t border-red-300/15 px-4 py-3 text-xs leading-5 text-white/75 sm:px-5">{player.injuryDescription}</p> : null}
+                                    </article>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="mx-auto max-w-xl border border-dashed border-[var(--line)] px-6 py-12 text-center">
+                                <Ambulance className="mx-auto text-[var(--muted)]" size={30} />
+                                <p className="mt-4 text-sm font-bold uppercase">No hay jugadores lesionados</p>
+                                <p className="mt-2 text-xs leading-5 text-[var(--muted)]">Si hay alguna baja, se añadirá aquí desde Administración.</p>
+                            </div>
+                        )}
                     </section>
                 ) : null}
                     </>

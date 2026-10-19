@@ -3,8 +3,14 @@
 import { FormEvent, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, Check, FileUp } from "lucide-react";
+import { AdminKatsuManager } from "@/components/admin-katsu-manager";
+import { AdminInjuryManager } from "@/components/admin-injury-manager";
 
-export function AdminImporter() {
+type KatsuMatch = { id: string; jornada: number; home: string; away: string; score: string | null; playerId: string | null };
+type KatsuPlayer = { id: string; name: string; number: number | null };
+type InjuryPlayer = { id: string; name: string; number: number | null; injured: boolean; injuryDescription: string | null };
+
+export function AdminImporter({ katsuMatches, katsuPlayers, injuryPlayers }: { katsuMatches: KatsuMatch[]; katsuPlayers: KatsuPlayer[]; injuryPlayers: InjuryPlayer[] }) {
     const [resultsMessage, setResultsMessage] = useState("");
     const [resultsError, setResultsError] = useState(false);
     const [resultsBusy, setResultsBusy] = useState(false);
@@ -172,6 +178,16 @@ export function AdminImporter() {
                     {statsMessage && <p role="status" className={`mt-4 text-sm ${statsError ? "text-red-300" : "text-[var(--lime)]"}`}>{statsMessage}</p>}
                     <button disabled={statsBusy} className="mt-5 inline-flex items-center gap-2 bg-[var(--lime)] px-4 py-3 text-xs font-black uppercase text-[var(--ink)] disabled:opacity-60">{statsBusy ? "Procesando..." : <><FileUp size={15} /> Importar estadísticas</>}</button>
                 </form>
+            </section>
+            <section className="border-t border-[var(--line)] pt-6">
+                <h2 className="text-xl font-black uppercase">4. Jugador KATSU por partido</h2>
+                <p className="mt-2 text-sm leading-6 text-[var(--muted)]">Elige el jugador destacado de cada partido del Bayern. Esta elección se guarda por separado y no se modifica al importar resultados o convocatorias.</p>
+                <AdminKatsuManager matches={katsuMatches} players={katsuPlayers} />
+            </section>
+            <section className="border-t border-[var(--line)] pt-6">
+                <h2 className="text-xl font-black uppercase">5. Parte médico</h2>
+                <p className="mt-2 text-sm leading-6 text-[var(--muted)]">Marca o desmarca los jugadores lesionados. El estado se guarda por separado de los CSV y se refleja en el apartado público de lesionados.</p>
+                <AdminInjuryManager players={injuryPlayers} />
             </section>
                 </div>
             </details>
