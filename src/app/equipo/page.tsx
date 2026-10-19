@@ -42,7 +42,7 @@ export default async function TeamPage() {
         const temporada = "2026-2027";
         const [playerResult, matchResult, tableResult, callupResult, statsResult] = await Promise.all([
             supabase.from("jugadores").select("id,nombre,posicion,dorsal,foto_url,video_url").eq("activo", true).order("dorsal", { nullsFirst: false }),
-            supabase.from("partidos").select("id,fecha,fecha_prevista,campo,equipo_local,equipo_visitante,goles_local,goles_visitante,estado").eq("temporada", temporada).eq("fase", "campeon_invierno").order("fecha_prevista"),
+            supabase.from("partidos").select("id,fecha,fecha_prevista,campo,equipo_local,equipo_visitante,goles_local,goles_visitante,estado,foto_convocatoria_url").eq("temporada", temporada).eq("fase", "campeon_invierno").order("fecha_prevista"),
             supabase.from("clasificacion").select("equipo,posicion,jugados,ganados,empatados,perdidos,goles_favor,goles_contra,diferencia,puntos").eq("temporada", temporada).eq("fase", "campeon_invierno").eq("grupo", "").order("posicion"),
             supabase.from("convocatorias").select("partido_id,jugador_id,convocado,partidos!inner(temporada,fase)").eq("partidos.temporada", temporada).eq("partidos.fase", "campeon_invierno"),
             supabase.from("estadisticas").select("jugador_id,goles,asistencias,penaltis_marcados,penaltis_tirados,dobles_penaltis_marcados,dobles_penaltis_tirados,faltas_directas_marcadas,amarillas,rojas,partidos!inner(jornada,fecha,fecha_prevista,equipo_local,equipo_visitante,temporada,fase)").eq("partidos.temporada", temporada).eq("partidos.fase", "campeon_invierno"),
@@ -160,6 +160,7 @@ export default async function TeamPage() {
                     date: `${dateText} · ${status === "done" ? "FINAL" : status === "pending" ? "PENDIENTE" : "PRÓXIMO"}`,
                     home: match.equipo_local,
                     away: match.equipo_visitante,
+                    callupPhotoUrl: match.foto_convocatoria_url,
                     score: match.goles_local === null || match.goles_visitante === null ? status === "pending" ? "PENDIENTE" : "PRÓXIMO" : `${match.goles_local} — ${match.goles_visitante}`,
                     status,
                     callups: matchCallups.has(match.id)
