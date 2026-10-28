@@ -88,9 +88,9 @@ function KatsuPlayerCard({ card }: { card: KatsuCard }) {
     );
 }
 
-function PlayerVideo({ player }: { player: Player }) {
+function PlayerVideo({ player, autoPlay = false }: { player: Player; autoPlay?: boolean }) {
     const videoRef = useRef<HTMLVideoElement>(null);
-    const isActive = useRef(false);
+    const isActive = useRef(autoPlay);
 
     const seekToLastFrame = () => {
         const video = videoRef.current;
@@ -119,24 +119,38 @@ function PlayerVideo({ player }: { player: Player }) {
         seekToLastFrame();
     };
 
+    useEffect(() => {
+        if (!autoPlay) return;
+
+        const video = videoRef.current;
+        if (!video) return;
+
+        isActive.current = true;
+        void video.play().catch((error: unknown) => {
+            console.error(`No se pudo reproducir el vídeo de ${player.name}.`, error);
+        });
+    }, [autoPlay, player.name]);
+
     return (
         <video
             ref={videoRef}
             className="h-full w-full object-contain focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--lime)]"
             src={player.video ?? undefined}
-            poster={player.photo ?? undefined}
+            poster={autoPlay ? undefined : player.photo ?? undefined}
             muted
             playsInline
-            preload="metadata"
+            autoPlay={autoPlay}
+            loop={false}
+            preload={autoPlay ? "auto" : "metadata"}
             tabIndex={0}
-            aria-label={`Vídeo de ${player.name}. Pasa el ratón o enfoca para reproducir.`}
+            aria-label={autoPlay ? `Vídeo de ${player.name}` : `Vídeo de ${player.name}. Pasa el ratón o enfoca para reproducir.`}
             onLoadedMetadata={() => {
                 if (!isActive.current) seekToLastFrame();
             }}
-            onMouseEnter={playVideo}
-            onMouseLeave={freezeVideo}
-            onFocus={playVideo}
-            onBlur={freezeVideo}
+            onMouseEnter={autoPlay ? undefined : playVideo}
+            onMouseLeave={autoPlay ? undefined : freezeVideo}
+            onFocus={autoPlay ? undefined : playVideo}
+            onBlur={autoPlay ? undefined : freezeVideo}
             onEnded={(event) => {
                 event.currentTarget.pause();
                 seekToLastFrame();
@@ -151,7 +165,7 @@ function PlayerCard({ player, index, featured = false }: { player: Player; index
         <article id={`player-${player.id}`} className={`player-card-shell reveal group w-full overflow-hidden ${featured ? "player-card-featured" : "scroll-mt-24 sm:w-[calc(50%-0.5rem)] lg:w-[calc(25%-0.75rem)]"}`} style={{ animationDelay: `${index * 80}ms` }}>
             <div className={`player-card-media relative aspect-[4/5] overflow-hidden ${player.video ? "bg-black" : "player-photo"}`}>
                 {player.video
-                    ? <PlayerVideo player={player} />
+                    ? <PlayerVideo player={player} autoPlay={featured} />
                     : player.photo
                         ? <Image src={player.photo} alt={`Foto de ${player.name}`} width={600} height={416} unoptimized className="h-full w-full object-cover" />
                         : null}
