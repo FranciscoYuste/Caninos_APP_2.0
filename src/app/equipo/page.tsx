@@ -37,6 +37,14 @@ type CallupRecord = {
 };
 
 export default async function TeamPage() {
+    let dashboardData: {
+        squad: Player[];
+        results: MatchItem[];
+        roundMatches: RoundMatchItem[];
+        table: Standing[];
+        katsuCards: KatsuCard[];
+    } | null = null;
+
     try {
         const supabase = await createSupabaseServerClient();
         const temporada = "2026-2027";
@@ -153,13 +161,14 @@ export default async function TeamPage() {
                 ? "PENDIENTE"
                 : `${match.goles_local} — ${match.goles_visitante}`,
         }));
+        const now = Date.now();
         const results: MatchItem[] = (matchResult.data ?? [])
             .filter((match) => match.equipo_local === FEATURED_TEAM || match.equipo_visitante === FEATURED_TEAM)
             .map((match) => {
                 const confirmedDate = match.fecha ? new Date(match.fecha) : null;
                 const upcoming = confirmedDate
-                    ? confirmedDate.getTime() >= Date.now()
-                    : !match.fecha_prevista || new Date(`${match.fecha_prevista}T23:59:59`).getTime() >= Date.now();
+                    ? confirmedDate.getTime() >= now
+                    : !match.fecha_prevista || new Date(`${match.fecha_prevista}T23:59:59`).getTime() >= now;
                 const status = match.estado === "finalizado" ? "done" : upcoming ? "next" : "pending";
                 const dateText = confirmedDate
                     ? `${confirmedDate.toLocaleDateString("es-ES", { timeZone: "Europe/Madrid", weekday: "short", day: "2-digit", month: "short" }).toUpperCase()} · ${confirmedDate.toLocaleTimeString("es-ES", { timeZone: "Europe/Madrid", hour: "2-digit", minute: "2-digit" })}${match.campo ? ` · ${match.campo}` : ""}`
@@ -213,10 +222,12 @@ export default async function TeamPage() {
             goalDifference: team.diferencia,
             points: team.puntos,
         }));
-        return <TeamDashboard squad={squad} results={results} roundMatches={roundMatches} table={table} katsuCards={katsuCards} dataState="ready" />;
+        dashboardData = { squad, results, roundMatches, table, katsuCards };
     } catch (error) {
         if (error instanceof Error && "digest" in error && error.digest === "DYNAMIC_SERVER_USAGE") throw error;
         console.error("Failed to load team dashboard", error);
-        return <TeamDashboard squad={[]} results={[]} roundMatches={[]} table={[]} katsuCards={[]} dataState="error" />;
     }
+    return dashboardData
+        ? <TeamDashboard {...dashboardData} dataState="ready" />
+        : <TeamDashboard squad={[]} results={[]} roundMatches={[]} table={[]} katsuCards={[]} dataState="error" />;
 }

@@ -12,7 +12,10 @@ export function IntroLanding() {
 
     useEffect(() => {
         const mediaQuery = window.matchMedia("(max-width: 767px)");
-        const updateViewport = () => setIsMobile(mediaQuery.matches);
+        const updateViewport = () => {
+            setIsMobile(mediaQuery.matches);
+            setShowEnter(false);
+        };
 
         updateViewport();
         mediaQuery.addEventListener("change", updateViewport);
@@ -20,7 +23,6 @@ export function IntroLanding() {
     }, []);
 
     useEffect(() => {
-        setShowEnter(false);
         if (!isMobile) return;
 
         const timer = window.setTimeout(() => setShowEnter(true), 1500);
