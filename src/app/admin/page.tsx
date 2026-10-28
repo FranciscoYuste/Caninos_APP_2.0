@@ -15,7 +15,7 @@ export default async function AdminPage() {
     const [matchResult, playerResult] = await Promise.all([
         adminClient
             .from("partidos")
-            .select("id,jornada,equipo_local,equipo_visitante,goles_local,goles_visitante,jugador_katsu_id")
+            .select("id,jornada,equipo_local,equipo_visitante,goles_local,goles_visitante,jugador_katsu_id,cronica")
             .eq("temporada", "2026-2027")
             .eq("fase", "campeon_invierno")
             .order("jornada"),
@@ -26,12 +26,12 @@ export default async function AdminPage() {
             .order("dorsal", { nullsFirst: false }),
     ]);
     const queryErrors = [
-        { resource: "partidos para KATSU", error: matchResult.error },
+        { resource: "partidos para administración", error: matchResult.error },
         { resource: "jugadores para KATSU", error: playerResult.error },
     ].filter(({ error }) => error);
     if (queryErrors.length) {
-        console.error("Could not load KATSU administration data", queryErrors);
-        throw new Error("No se pudieron cargar los partidos y jugadores para gestionar KATSU.");
+        console.error("Could not load match administration data", queryErrors);
+        throw new Error("No se pudieron cargar los partidos y jugadores para administración.");
     }
     const katsuMatches = (matchResult.data ?? [])
         .filter((match) => match.equipo_local === "Bayern D.L.Caninos" || match.equipo_visitante === "Bayern D.L.Caninos")
@@ -45,6 +45,15 @@ export default async function AdminPage() {
                 : `${match.goles_local} — ${match.goles_visitante}`,
             playerId: match.jugador_katsu_id,
         }));
+    const chronicleMatches = (matchResult.data ?? [])
+        .filter((match) => match.equipo_local === "Bayern D.L.Caninos" || match.equipo_visitante === "Bayern D.L.Caninos")
+        .map((match) => ({
+        id: match.id,
+        jornada: match.jornada,
+        home: match.equipo_local,
+        away: match.equipo_visitante,
+        chronicle: match.cronica,
+    }));
     const katsuPlayers = (playerResult.data ?? []).map((player) => ({
         id: player.id,
         name: player.nombre,
@@ -58,5 +67,5 @@ export default async function AdminPage() {
         injuryDescription: player.descripcion_lesion,
     }));
 
-    return <AdminImporter katsuMatches={katsuMatches} katsuPlayers={katsuPlayers} injuryPlayers={injuryPlayers} />;
+    return <AdminImporter katsuMatches={katsuMatches} katsuPlayers={katsuPlayers} injuryPlayers={injuryPlayers} chronicleMatches={chronicleMatches} />;
 }

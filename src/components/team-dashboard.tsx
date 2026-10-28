@@ -1,8 +1,8 @@
 "use client";
 
 import Image from "next/image";
-import { useRef, useState } from "react";
-import { Activity, Ambulance, ArrowUpRight, CalendarDays, ClipboardList, Cross, Shield, Star, Trophy, Users } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Activity, Ambulance, ArrowUpRight, CalendarDays, ClipboardList, Cross, Shield, Star, Trophy, Users, X } from "lucide-react";
 
 export type Player = {
     id: string;
@@ -22,7 +22,8 @@ export type Player = {
     video?: string | null;
     matchStats?: Array<{ label: string; goals: number; assists: number; penalties: string; doublePenalties: string; directFreeKicks: number; cards: string }>;
 };
-export type MatchItem = { key: string; date: string; home: string; away: string; score: string; finalScore?: string | null; status: string; callupPhotoUrl?: string | null; callups?: Array<{ name: string; calledUp: boolean }> };
+export type MatchItem = { key: string; jornada: number; date: string; home: string; away: string; score: string; chronicle: string | null; finalScore?: string | null; status: string; callupPhotoUrl?: string | null; callups?: Array<{ name: string; calledUp: boolean }> };
+export type RoundMatchItem = { key: string; jornada: number; home: string; away: string; score: string };
 export type KatsuCard = { key: string; jornada: number; home: string; away: string; score: string | null; player: Pick<Player, "id" | "name" | "position" | "number" | "photo"> };
 export type Standing = { position: number; name: string; played: number; won: number; drawn: number; lost: number; goalsFor: number; goalsAgainst: number; goalDifference: number; points: number };
 type CompetitionId = "winter" | "promotion" | "cup";
@@ -233,9 +234,11 @@ function PlayerStatChart({ title, color, players, className = "" }: { title: str
     );
 }
 
-export function TeamDashboard({ squad, table, results, katsuCards, dataState }: { squad: Player[]; table: Standing[]; results: MatchItem[]; katsuCards: KatsuCard[]; dataState: "ready" | "error" }) {
+export function TeamDashboard({ squad, table, results, roundMatches, katsuCards, dataState }: { squad: Player[]; table: Standing[]; results: MatchItem[]; roundMatches: RoundMatchItem[]; katsuCards: KatsuCard[]; dataState: "ready" | "error" }) {
     const [activeMenu, setActiveMenu] = useState<"competition" | "players" | "callups" | "stats" | "katsu" | "injuries">("competition");
     const [activeCompetition, setActiveCompetition] = useState<CompetitionId>("winter");
+    const [expandedJornada, setExpandedJornada] = useState<number | null>(null);
+    const [selectedChronicle, setSelectedChronicle] = useState<MatchItem | null>(null);
     const emptyMessage = dataState === "error"
         ? "No se pudieron cargar datos. Revisa la conexión y las migraciones de Supabase."
         : "Todavía no hay registros en Supabase.";
@@ -255,6 +258,14 @@ export function TeamDashboard({ squad, table, results, katsuCards, dataState }: 
         { id: "cup", label: "Copa", status: "Pendiente" },
     ];
     const selectedCompetition = competitions.find(({ id }) => id === activeCompetition) ?? competitions[0];
+    useEffect(() => {
+        if (!selectedChronicle) return;
+        const closeOnEscape = (event: KeyboardEvent) => {
+            if (event.key === "Escape") setSelectedChronicle(null);
+        };
+        document.addEventListener("keydown", closeOnEscape);
+        return () => document.removeEventListener("keydown", closeOnEscape);
+    }, [selectedChronicle]);
     const roles = [
         { id: "goalkeeper", label: "Portero" },
         { id: "defender", label: "Cierre" },
@@ -381,7 +392,52 @@ export function TeamDashboard({ squad, table, results, katsuCards, dataState }: 
                         </table>
                         <div id="partidos" className="mt-12">
                             <div className="mb-6 flex flex-col items-center text-center"><p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--lime)]">Calendario y resultados del Bayern</p><h2 className="mt-2 text-3xl font-black uppercase">Partidos</h2><CalendarDays className="mt-3 text-[var(--lime)]" /></div>
-                            <div className="divide-y divide-[var(--line)] border-y border-[var(--line)]">{results.length ? results.map((match) => <article key={match.key} className="grid grid-cols-[1fr_auto] gap-3 py-4"><div><p className="mb-2 font-mono text-[9px] tracking-[0.1em] text-[var(--muted)]">{match.date}</p><p className="text-xs font-semibold">{match.home} <span className="mx-1 text-[var(--muted)]">vs</span> {match.away}</p></div><p className={`self-center font-mono text-sm font-bold ${match.status === "next" ? "text-[var(--lime)]" : ""}`}>{match.score}</p></article>) : <p className="py-5 text-sm text-[var(--muted)]">{emptyMessage}</p>}</div>
+                            <div className="divide-y divide-[var(--line)] border-y border-[var(--line)]">{results.length ? results.map((match) => {
+                                const isExpanded = expandedJornada === match.jornada;
+                                const otherMatches = roundMatches.filter((roundMatch) => roundMatch.jornada === match.jornada && roundMatch.key !== match.key);
+                                return (
+                                    <article key={match.key} className="grid grid-cols-[1fr_auto] gap-3 py-4">
+                                        <div>
+                                            <p className="mb-2 font-mono text-[9px] tracking-[0.1em] text-[var(--muted)]">{match.date}</p>
+                                            <button
+                                                type="button"
+                                                aria-expanded={isExpanded}
+                                                aria-controls={`jornada-${match.jornada}`}
+                                                onClick={() => setExpandedJornada(isExpanded ? null : match.jornada)}
+                                                className="mb-2 text-[10px] font-bold uppercase tracking-[0.1em] text-[var(--lime)] underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--lime)]"
+                                            >
+                                                Jornada {match.jornada} · {isExpanded ? "Ocultar otros partidos" : "Ver otros partidos"}
+                                            </button>
+                                            <p className="text-xs font-semibold">{match.home} <span className="mx-1 text-[var(--muted)]">vs</span> {match.away}</p>
+                                            {match.chronicle ? (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setSelectedChronicle(match)}
+                                                    className="mt-3 border border-[var(--lime)]/50 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.1em] text-[var(--lime)] transition hover:bg-[var(--lime)] hover:text-[var(--ink)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--lime)]"
+                                                >
+                                                    Leer crónica
+                                                </button>
+                                            ) : null}
+                                        </div>
+                                        <p className={`self-center font-mono text-sm font-bold ${match.status === "next" ? "text-[var(--lime)]" : ""}`}>{match.score}</p>
+                                        {isExpanded ? (
+                                            <div id={`jornada-${match.jornada}`} className="col-span-full border-t border-[var(--line)] pt-3">
+                                                <h3 className="mb-3 text-[10px] font-bold uppercase tracking-[0.1em] text-[var(--muted)]">Otros partidos · Jornada {match.jornada}</h3>
+                                                {otherMatches.length ? (
+                                                    <ul className="space-y-2">
+                                                        {otherMatches.map((roundMatch) => (
+                                                            <li key={roundMatch.key} className="flex items-center justify-between gap-3 text-xs">
+                                                                <span className="min-w-0 truncate">{roundMatch.home} <span className="mx-1 text-[var(--muted)]">vs</span> {roundMatch.away}</span>
+                                                                <span className="shrink-0 font-mono font-bold">{roundMatch.score}</span>
+                                                            </li>
+                                                        ))}
+                                                    </ul>
+                                                ) : <p className="text-xs text-[var(--muted)]">No hay otros partidos cargados para esta jornada.</p>}
+                                            </div>
+                                        ) : null}
+                                    </article>
+                                );
+                            }) : <p className="py-5 text-sm text-[var(--muted)]">{emptyMessage}</p>}</div>
                         </div>
                     </section>
                 ) : null}
@@ -515,6 +571,42 @@ export function TeamDashboard({ squad, table, results, katsuCards, dataState }: 
                 )}
             </div>
             <footer className="flex flex-nowrap items-center justify-between gap-1.5 border-t border-[var(--line)] px-2 py-5 text-[7px] uppercase tracking-[0.01em] text-[var(--muted)] sm:gap-3 sm:px-10 sm:py-6 sm:text-[10px] sm:tracking-[0.12em]"><span className="whitespace-nowrap">Bayern D.L.Caninos. Creado para fumar en equipo.</span><span className="flex shrink-0 items-center gap-1 whitespace-nowrap sm:gap-3"><Image src="/fotos/CORONA MAS PUA.png" alt="" aria-hidden="true" width={42} height={42} className="footer-emblem-glow size-6 object-contain sm:size-9" /><span className="flex items-center gap-1 sm:gap-2"><Shield size={12} className="hidden sm:block" /><span className="hidden sm:inline">Temporada </span>2026-2027</span></span></footer>
+            {selectedChronicle ? (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 sm:p-8"
+                    onMouseDown={(event) => {
+                        if (event.target === event.currentTarget) setSelectedChronicle(null);
+                    }}
+                >
+                    <section
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="match-chronicle-title"
+                        className="relative max-h-[90vh] w-full max-w-3xl overflow-y-auto border border-[var(--lime)]/50 bg-[var(--panel)] p-5 shadow-2xl sm:p-8"
+                    >
+                        <button
+                            type="button"
+                            aria-label="Cerrar crónica"
+                            onClick={() => setSelectedChronicle(null)}
+                            className="absolute right-4 top-4 grid size-10 place-items-center border border-[var(--line)] text-white hover:border-[var(--lime)] hover:text-[var(--lime)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--lime)]"
+                        >
+                            <X size={20} />
+                        </button>
+                        <p className="pr-12 text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--lime)]">Crónica · Jornada {selectedChronicle.jornada}</p>
+                        <h2 id="match-chronicle-title" className="mt-3 pr-12 text-xl font-black uppercase sm:text-2xl">
+                            {selectedChronicle.home} <span className="text-[var(--muted)]">vs</span> {selectedChronicle.away}
+                        </h2>
+                        <p className="mt-3 border-b border-[var(--line)] pb-4 font-mono text-xs leading-5 text-[var(--muted)]">
+                            {selectedChronicle.date}<span className="mx-2">·</span><span className="font-bold text-white">{selectedChronicle.score}</span>
+                        </p>
+                        <div className="mt-6 space-y-4 text-sm leading-7 text-white/85">
+                            {selectedChronicle.chronicle?.split(/\n\s*\n/).filter((paragraph) => paragraph.trim()).map((paragraph, index) => (
+                                <p key={index} className="whitespace-pre-wrap">{paragraph}</p>
+                            ))}
+                        </div>
+                    </section>
+                </div>
+            ) : null}
         </main>
     );
 }

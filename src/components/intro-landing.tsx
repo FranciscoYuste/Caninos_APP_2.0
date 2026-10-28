@@ -2,12 +2,13 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { CircleAlert, RotateCcw } from "lucide-react";
+import { ArrowUpRight, CircleAlert, RotateCcw } from "lucide-react";
 
 export function IntroLanding() {
     const [isMobile, setIsMobile] = useState(false);
     const [videoUnavailable, setVideoUnavailable] = useState(false);
     const [replayKey, setReplayKey] = useState(0);
+    const [showEnter, setShowEnter] = useState(false);
 
     useEffect(() => {
         const mediaQuery = window.matchMedia("(max-width: 767px)");
@@ -17,6 +18,14 @@ export function IntroLanding() {
         mediaQuery.addEventListener("change", updateViewport);
         return () => mediaQuery.removeEventListener("change", updateViewport);
     }, []);
+
+    useEffect(() => {
+        setShowEnter(false);
+        if (!isMobile) return;
+
+        const timer = window.setTimeout(() => setShowEnter(true), 1500);
+        return () => window.clearTimeout(timer);
+    }, [isMobile]);
 
     return (
         <>
@@ -56,11 +65,16 @@ export function IntroLanding() {
                         </div>
                     ) : null}
 
-                    <Link href="/equipo" className="intro-hotspot intro-hotspot--enter" aria-label="Entrar al equipo">
-                        <span>Entrar</span>
-                    </Link>
-                    <Link href="/login?next=%2Fadmin" className="intro-hotspot intro-hotspot--admin" aria-label="Acceso de administración">
-                        <span>Admin</span>
+                    <Link
+                        href="/equipo"
+                        className={`intro-hotspot ${showEnter ? "is-visible" : ""}`}
+                        aria-label="Entrar al equipo"
+                        aria-hidden={!showEnter}
+                        tabIndex={showEnter ? 0 : -1}
+                    >
+                        <span className="intro-hotspot-label">Entrar</span>
+                        <span className="intro-hotspot-hint">Bayern D.L. Caninos</span>
+                        <ArrowUpRight className="intro-hotspot-icon" size={22} strokeWidth={2.5} aria-hidden="true" />
                     </Link>
                 </div>
             </main>

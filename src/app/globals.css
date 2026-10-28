@@ -382,74 +382,110 @@ input {
 .intro-hotspot {
     position: absolute;
     z-index: 2;
-    display: grid;
-    place-items: center;
-    border: 1px solid transparent;
-    border-radius: 8px;
-    color: transparent;
+    top: 63%;
+    left: 21%;
+    display: flex;
+    width: 60%;
+    min-width: 80px;
+    min-height: 195px;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    overflow: hidden;
+    border: 3px solid #f2cf18c9;
+    background: linear-gradient(115deg, #090d0fe8, #202729e8 52%, #090d0fe8);
+    box-shadow: 0 0 0 4px #05090b80, 0 0 28px #f2cf1845, inset 0 1px #ffffff20;
+    color: #f5d927;
+    text-decoration: none;
+    backdrop-filter: blur(8px);
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(8px);
+    transition: opacity 350ms ease, transform 350ms ease, box-shadow 180ms ease, border-color 180ms ease, background-color 180ms ease;
     -webkit-tap-highlight-color: transparent;
     touch-action: manipulation;
 }
 
-.intro-hotspot span {
+.intro-hotspot::before {
     position: absolute;
-    width: 1px;
+    inset: 4px;
+    border: 1px solid #ffffff20;
+    content: "";
+    pointer-events: none;
+}
+
+.intro-hotspot::after {
+    position: absolute;
+    top: 0;
+    left: 12%;
+    width: 76%;
     height: 1px;
-    overflow: hidden;
-    clip-path: inset(50%);
+    background: linear-gradient(90deg, transparent, #f8df58, transparent);
+    content: "";
+    pointer-events: none;
+}
+
+.intro-hotspot-label {
+    position: relative;
+    z-index: 1;
+    font-size: clamp(1.8rem, 10vw, 2.7rem);
+    font-weight: 900;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+}
+
+.intro-hotspot-hint {
+    position: absolute;
+    bottom: 10px;
+    left: 50%;
+    color: #ffffff8c;
+    font-size: 0.5rem;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    transform: translateX(-50%);
     white-space: nowrap;
 }
 
-.intro-hotspot--enter {
-    top: 62%;
-    left: 26%;
-    width: 50%;
-    height: 8%;
+.intro-hotspot-icon {
+    position: relative;
+    z-index: 1;
+    color: #f8df58;
+    transition: transform 180ms ease;
 }
 
-.intro-hotspot--admin {
-    top: 72%;
-    left: 30%;
-    width: 40%;
-    height: 8%;
+.intro-hotspot.is-visible {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0);
+}
+
+.intro-hotspot.is-visible:hover {
+    border-color: #ffe96b;
+    box-shadow: 0 0 0 4px #05090b80, 0 0 36px #f2cf1870, inset 0 1px #ffffff30;
+}
+
+.intro-hotspot.is-visible:hover .intro-hotspot-icon {
+    transform: translate(2px, -2px);
 }
 
 .intro-hotspot:active {
-    border-color: var(--lime);
-    background: #f2cf1835;
-    box-shadow: 0 0 28px #f2cf1899;
+    transform: translateY(2px);
+    background: linear-gradient(115deg, #181d1e, #303735 52%, #181d1e);
+    box-shadow: 0 0 0 2px #05090b80, 0 0 18px #f2cf1850, inset 0 1px #ffffff20;
 }
 
 .intro-hotspot:focus-visible {
-    border-color: var(--lime);
-    outline: 2px solid var(--lime);
-    outline-offset: 3px;
-    background: #f2cf182b;
+    border-color: #fff09a;
+    outline: 3px solid #fff;
+    outline-offset: 4px;
 }
 
-.intro-frame--fallback .intro-hotspot {
-    left: 10%;
-    width: 80%;
-    height: 56px;
-    border-color: var(--line);
-    background: var(--panel);
-    color: var(--paper);
-}
-
-.intro-frame--fallback .intro-hotspot--enter {
-    top: 70%;
-}
-
-.intro-frame--fallback .intro-hotspot--admin {
-    top: calc(70% + 68px);
-}
-
-.intro-frame--fallback .intro-hotspot span {
-    position: static;
-    width: auto;
-    height: auto;
-    overflow: visible;
-    clip-path: none;
+@media (prefers-reduced-motion: reduce) {
+    .intro-hotspot,
+    .intro-hotspot-icon {
+        transition: none;
+    }
 }
 
 .intro-fallback {

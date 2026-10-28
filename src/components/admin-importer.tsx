@@ -5,12 +5,14 @@ import Link from "next/link";
 import { ArrowLeft, Check, FileUp } from "lucide-react";
 import { AdminKatsuManager } from "@/components/admin-katsu-manager";
 import { AdminInjuryManager } from "@/components/admin-injury-manager";
+import { AdminMatchChronicleManager } from "@/components/admin-match-chronicle-manager";
 
 type KatsuMatch = { id: string; jornada: number; home: string; away: string; score: string | null; playerId: string | null };
 type KatsuPlayer = { id: string; name: string; number: number | null };
 type InjuryPlayer = { id: string; name: string; number: number | null; injured: boolean; injuryDescription: string | null };
+type ChronicleMatch = { id: string; jornada: number; home: string; away: string; chronicle: string | null };
 
-export function AdminImporter({ katsuMatches, katsuPlayers, injuryPlayers }: { katsuMatches: KatsuMatch[]; katsuPlayers: KatsuPlayer[]; injuryPlayers: InjuryPlayer[] }) {
+export function AdminImporter({ katsuMatches, katsuPlayers, injuryPlayers, chronicleMatches }: { katsuMatches: KatsuMatch[]; katsuPlayers: KatsuPlayer[]; injuryPlayers: InjuryPlayer[]; chronicleMatches: ChronicleMatch[] }) {
     const [resultsMessage, setResultsMessage] = useState("");
     const [resultsError, setResultsError] = useState(false);
     const [resultsBusy, setResultsBusy] = useState(false);
@@ -133,8 +135,9 @@ export function AdminImporter({ katsuMatches, katsuPlayers, injuryPlayers }: { k
                     Liga de invierno <span className="ml-2 text-[10px] font-bold tracking-[0.12em] text-[var(--lime)]">ACTIVA · 2026-2027</span>
                 </summary>
                 <div className="space-y-6 border-t border-[var(--line)] p-5 sm:p-7">
-                <section>
-                <h2 className="text-xl font-black uppercase">1. Resultados</h2>
+                <details className="border border-[var(--line)]">
+                <summary className="cursor-pointer list-none p-4 text-base font-black uppercase marker:hidden">1. Resultados</summary>
+                <div className="border-t border-[var(--line)] p-4">
                 <p className="mt-2 text-sm leading-6 text-[var(--muted)]">Descarga la plantilla actualizada desde Supabase: contiene los 66 partidos y conserva los resultados ya importados. Cambia solo los marcadores que quieras actualizar; las celdas vacías no borran resultados anteriores.</p>
                 <a href="/api/admin/templates?tipo=resultados&fase=campeon_invierno" className="mt-4 inline-flex border border-[var(--lime)] px-4 py-3 text-xs font-bold uppercase text-[var(--lime)] hover:bg-[var(--lime)] hover:text-[var(--ink)]">Descargar plantilla actualizada</a>
                 <form onSubmit={submitResults} className="mt-5">
@@ -146,10 +149,12 @@ export function AdminImporter({ katsuMatches, katsuPlayers, injuryPlayers }: { k
                     {resultsMessage && <p role="status" className={`mt-4 text-sm ${resultsError ? "text-red-300" : "text-[var(--lime)]"}`}>{resultsMessage}</p>}
                     <button disabled={resultsBusy} className="mt-5 inline-flex items-center gap-2 bg-[var(--lime)] px-4 py-3 text-xs font-black uppercase text-[var(--ink)] disabled:opacity-60">{resultsBusy ? "Procesando..." : <><FileUp size={15} /> Importar resultados</>}</button>
                 </form>
-                </section>
+                </div>
+                </details>
 
-                <section>
-                <h2 className="text-xl font-black uppercase">2. Convocatoria y horario definitivo</h2>
+                <details className="border border-[var(--line)]">
+                <summary className="cursor-pointer list-none p-4 text-base font-black uppercase marker:hidden">2. Convocatoria y horario definitivo</summary>
+                <div className="border-t border-[var(--line)] p-4">
                 <p className="mt-2 text-sm leading-6 text-[var(--muted)]">Puedes cargar las convocatorias semana a semana, aunque aún no se conozcan la fecha, la hora o el campo: la fecha prevista es solo informativa y no se convierte en horario confirmado. En la columna «convocado», marca sí/no para cada jugador de la jornada; las filas vacías conservan su estado anterior. Cuando se confirme, añade fecha y hora definitivas juntas y el campo una sola vez por partido. Una carga posterior conserva el horario confirmado si esos campos se dejan vacíos.</p>
                 <div className="mt-4 flex flex-wrap gap-3">
                     <a href="/api/admin/templates?tipo=convocatoria&fase=campeon_invierno" className="inline-flex border border-[var(--lime)] px-4 py-3 text-xs font-bold uppercase text-[var(--lime)] hover:bg-[var(--lime)] hover:text-[var(--ink)]">Descargar plantilla actualizada</a>
@@ -163,9 +168,11 @@ export function AdminImporter({ katsuMatches, katsuPlayers, injuryPlayers }: { k
                     {callupsMessage && <p role="status" className={`mt-4 text-sm ${callupsError ? "text-red-300" : "text-[var(--lime)]"}`}>{callupsMessage}</p>}
                     <button disabled={callupsBusy} className="mt-5 inline-flex items-center gap-2 bg-[var(--lime)] px-4 py-3 text-xs font-black uppercase text-[var(--ink)] disabled:opacity-60">{callupsBusy ? "Procesando..." : <><FileUp size={15} /> Importar convocatoria</>}</button>
                 </form>
-            </section>
-            <section>
-                <h2 className="text-xl font-black uppercase">3. Estadísticas por jugador y partido</h2>
+                </div>
+                </details>
+            <details className="border border-[var(--line)]">
+                <summary className="cursor-pointer list-none p-4 text-base font-black uppercase marker:hidden">3. Estadísticas por jugador y partido</summary>
+                <div className="border-t border-[var(--line)] p-4">
                 <p className="mt-2 text-sm leading-6 text-[var(--muted)]">Después de importar la convocatoria, descarga la plantilla actualizada. Incluye jugadores y estadísticas ya guardadas para cada partido del Bayern. Completa estadísticas solo para jugadores convocados que tengan datos; un convocado puede tener una fila de estadísticas o no tenerla. Deja todas las columnas vacías si no hay estadísticas que registrar. Las filas con todo a cero también se consideran sin datos.</p>
                 <p className="mt-2 text-xs leading-5 text-[var(--muted)]">Al reimportar, para cada partido incluido se sustituye el detalle por lo que indique el archivo. Descarga una plantilla nueva antes de editar para conservar los datos anteriores; las estadísticas de los demás partidos no cambian.</p>
                 <a href="/api/admin/templates?tipo=estadisticas&fase=campeon_invierno" className="mt-4 inline-flex border border-[var(--lime)] px-4 py-3 text-xs font-bold uppercase text-[var(--lime)] hover:bg-[var(--lime)] hover:text-[var(--ink)]">Descargar plantilla actualizada</a>
@@ -178,17 +185,29 @@ export function AdminImporter({ katsuMatches, katsuPlayers, injuryPlayers }: { k
                     {statsMessage && <p role="status" className={`mt-4 text-sm ${statsError ? "text-red-300" : "text-[var(--lime)]"}`}>{statsMessage}</p>}
                     <button disabled={statsBusy} className="mt-5 inline-flex items-center gap-2 bg-[var(--lime)] px-4 py-3 text-xs font-black uppercase text-[var(--ink)] disabled:opacity-60">{statsBusy ? "Procesando..." : <><FileUp size={15} /> Importar estadísticas</>}</button>
                 </form>
-            </section>
-            <section className="border-t border-[var(--line)] pt-6">
-                <h2 className="text-xl font-black uppercase">4. Jugador KATSU por partido</h2>
+                </div>
+            </details>
+            <details className="border border-[var(--line)]">
+                <summary className="cursor-pointer list-none p-4 text-base font-black uppercase marker:hidden">4. Jugador KATSU por partido</summary>
+                <div className="border-t border-[var(--line)] p-4">
                 <p className="mt-2 text-sm leading-6 text-[var(--muted)]">Elige el jugador destacado de cada partido del Bayern. Esta elección se guarda por separado y no se modifica al importar resultados o convocatorias.</p>
                 <AdminKatsuManager matches={katsuMatches} players={katsuPlayers} />
-            </section>
-            <section className="border-t border-[var(--line)] pt-6">
-                <h2 className="text-xl font-black uppercase">5. Parte médico</h2>
+                </div>
+            </details>
+            <details className="border border-[var(--line)]">
+                <summary className="cursor-pointer list-none p-4 text-base font-black uppercase marker:hidden">5. Parte médico</summary>
+                <div className="border-t border-[var(--line)] p-4">
                 <p className="mt-2 text-sm leading-6 text-[var(--muted)]">Marca o desmarca los jugadores lesionados. El estado se guarda por separado de los CSV y se refleja en el apartado público de lesionados.</p>
                 <AdminInjuryManager players={injuryPlayers} />
-            </section>
+                </div>
+            </details>
+            <details className="border border-[var(--line)]">
+                <summary className="cursor-pointer list-none p-4 text-base font-black uppercase marker:hidden">6. Crónica por partido</summary>
+                <div className="border-t border-[var(--line)] p-4">
+                <p className="mt-2 text-sm leading-6 text-[var(--muted)]">Escribe una crónica para cada partido del Bayern. Puedes incluir hasta 100.000 caracteres; deja una línea en blanco entre párrafos. Si borras el texto y guardas, la crónica dejará de mostrarse en la página pública.</p>
+                <AdminMatchChronicleManager matches={chronicleMatches} />
+                </div>
+            </details>
                 </div>
             </details>
 
@@ -208,8 +227,9 @@ export function AdminImporter({ katsuMatches, katsuPlayers, injuryPlayers }: { k
                 </div>
             </details>
 
-            <section className="mt-6 border border-[var(--line)] bg-[var(--panel)] p-5 sm:p-7">
-                <h2 className="text-xl font-black uppercase">Plantilla común de jugadores</h2>
+            <details className="mt-6 border border-[var(--line)] bg-[var(--panel)]">
+                <summary className="cursor-pointer list-none p-5 text-lg font-black uppercase marker:hidden sm:p-7">Plantilla común de jugadores</summary>
+                <div className="border-t border-[var(--line)] p-5 sm:p-7">
                 <p className="mt-2 text-sm leading-6 text-[var(--muted)]">Esta ficha se comparte entre todas las competiciones. Los cambios de dorsal y posición se reflejan en cada una.</p>
                 <p className="mt-2 text-xs leading-5 text-[var(--muted)]">Posiciones válidas: Portero, Cierre, Ala izquierda, Ala derecha, Pívot o Por definir. Dorsal: número del 0 al 99 o vacío. Guarda el archivo como CSV UTF-8.</p>
                 <a href="/api/admin/players" className="mt-4 inline-flex border border-[var(--lime)] px-4 py-3 text-xs font-bold uppercase text-[var(--lime)] hover:bg-[var(--lime)] hover:text-[var(--ink)]">Descargar plantilla de jugadores</a>
@@ -220,7 +240,8 @@ export function AdminImporter({ katsuMatches, katsuPlayers, injuryPlayers }: { k
                     {playersMessage && <p role="status" className={`mt-4 text-sm ${playersError ? "text-red-300" : "text-[var(--lime)]"}`}>{playersMessage}</p>}
                     <button disabled={playersBusy} className="mt-5 inline-flex items-center gap-2 bg-[var(--lime)] px-4 py-3 text-xs font-black uppercase text-[var(--ink)] disabled:opacity-60">{playersBusy ? "Procesando..." : <><FileUp size={15} /> Importar fichas</>}</button>
                 </form>
-            </section>
+                </div>
+            </details>
             <p className="mt-5 flex items-center gap-2 text-xs text-[var(--muted)]"><Check size={14} className="text-[var(--lime)]" /> Cada archivo se procesa de forma transaccional y puede volver a cargarse.</p>
         </main>
     );

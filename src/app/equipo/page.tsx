@@ -1,5 +1,5 @@
 import { TeamDashboard } from "@/components/team-dashboard";
-import type { KatsuCard, MatchItem, Player, Standing } from "@/components/team-dashboard";
+import type { KatsuCard, MatchItem, Player, RoundMatchItem, Standing } from "@/components/team-dashboard";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 const FEATURED_TEAM = "Bayern D.L.Caninos";
@@ -42,7 +42,7 @@ export default async function TeamPage() {
         const temporada = "2026-2027";
         const [playerResult, matchResult, tableResult, callupResult, statsResult] = await Promise.all([
             supabase.from("jugadores").select("id,nombre,posicion,dorsal,foto_url,video_url,lesionado,descripcion_lesion").eq("activo", true).order("dorsal", { nullsFirst: false }),
-            supabase.from("partidos").select("id,jornada,fecha,fecha_prevista,campo,equipo_local,equipo_visitante,goles_local,goles_visitante,estado,foto_convocatoria_url,jugador_katsu_id").eq("temporada", temporada).eq("fase", "campeon_invierno").order("fecha_prevista"),
+            supabase.from("partidos").select("id,jornada,fecha,fecha_prevista,campo,equipo_local,equipo_visitante,goles_local,goles_visitante,estado,foto_convocatoria_url,jugador_katsu_id,cronica").eq("temporada", temporada).eq("fase", "campeon_invierno").order("fecha_prevista"),
             supabase.from("clasificacion").select("equipo,posicion,jugados,ganados,empatados,perdidos,goles_favor,goles_contra,diferencia,puntos").eq("temporada", temporada).eq("fase", "campeon_invierno").eq("grupo", "").order("posicion"),
             supabase.from("convocatorias").select("partido_id,jugador_id,convocado,partidos!inner(temporada,fase)").eq("partidos.temporada", temporada).eq("partidos.fase", "campeon_invierno"),
             supabase.from("estadisticas").select("jugador_id,goles,asistencias,penaltis_marcados,penaltis_tirados,dobles_penaltis_marcados,dobles_penaltis_tirados,faltas_directas_marcadas,amarillas,rojas,partidos!inner(jornada,fecha,fecha_prevista,equipo_local,equipo_visitante,temporada,fase)").eq("partidos.temporada", temporada).eq("partidos.fase", "campeon_invierno"),
@@ -144,6 +144,15 @@ export default async function TeamPage() {
                 matchStats: matchStats.get(player.id),
             };
         });
+        const roundMatches: RoundMatchItem[] = (matchResult.data ?? []).map((match) => ({
+            key: match.id,
+            jornada: match.jornada,
+            home: match.equipo_local,
+            away: match.equipo_visitante,
+            score: match.goles_local === null || match.goles_visitante === null
+                ? "PENDIENTE"
+                : `${match.goles_local} — ${match.goles_visitante}`,
+        }));
         const results: MatchItem[] = (matchResult.data ?? [])
             .filter((match) => match.equipo_local === FEATURED_TEAM || match.equipo_visitante === FEATURED_TEAM)
             .map((match) => {
@@ -159,9 +168,11 @@ export default async function TeamPage() {
                         : "FECHA Y CAMPO POR CONFIRMAR";
                 return {
                     key: match.id,
+                    jornada: match.jornada,
                     date: `${dateText} · ${status === "done" ? "FINAL" : status === "pending" ? "PENDIENTE" : "PRÓXIMO"}`,
                     home: match.equipo_local,
                     away: match.equipo_visitante,
+                    chronicle: match.cronica,
                     callupPhotoUrl: match.foto_convocatoria_url,
                     finalScore: match.goles_local === null || match.goles_visitante === null
                         ? null
@@ -202,10 +213,10 @@ export default async function TeamPage() {
             goalDifference: team.diferencia,
             points: team.puntos,
         }));
-        return <TeamDashboard squad={squad} results={results} table={table} katsuCards={katsuCards} dataState="ready" />;
+        return <TeamDashboard squad={squad} results={results} roundMatches={roundMatches} table={table} katsuCards={katsuCards} dataState="ready" />;
     } catch (error) {
         if (error instanceof Error && "digest" in error && error.digest === "DYNAMIC_SERVER_USAGE") throw error;
         console.error("Failed to load team dashboard", error);
-        return <TeamDashboard squad={[]} results={[]} table={[]} katsuCards={[]} dataState="error" />;
+        return <TeamDashboard squad={[]} results={[]} roundMatches={[]} table={[]} katsuCards={[]} dataState="error" />;
     }
 }
