@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { Activity, Ambulance, ArrowUpRight, CalendarDays, ClipboardList, Cross, Shield, Star, Trophy, Users, X } from "lucide-react";
+import { PlayerField } from "@/components/player-field";
 
 export type Player = {
     id: string;
@@ -145,9 +146,9 @@ function PlayerVideo({ player }: { player: Player }) {
     );
 }
 
-function PlayerCard({ player, index }: { player: Player; index: number }) {
+function PlayerCard({ player, index, featured = false }: { player: Player; index: number; featured?: boolean }) {
     return (
-        <article id={`player-${player.id}`} className="player-card-shell reveal group w-full scroll-mt-24 overflow-hidden sm:w-[calc(50%-0.5rem)] lg:w-[calc(25%-0.75rem)]" style={{ animationDelay: `${index * 80}ms` }}>
+        <article id={`player-${player.id}`} className={`player-card-shell reveal group w-full overflow-hidden ${featured ? "player-card-featured" : "scroll-mt-24 sm:w-[calc(50%-0.5rem)] lg:w-[calc(25%-0.75rem)]"}`} style={{ animationDelay: `${index * 80}ms` }}>
             <div className={`player-card-media relative aspect-[4/5] overflow-hidden ${player.video ? "bg-black" : "player-photo"}`}>
                 {player.video
                     ? <PlayerVideo player={player} />
@@ -199,18 +200,6 @@ function PlayerCard({ player, index }: { player: Player; index: number }) {
     );
 }
 
-function PlayerMini({ player, onSelect }: { player: Player; onSelect: () => void }) {
-    return (
-        <button type="button" onClick={onSelect} aria-label={`Ver ficha de ${player.name}, ${player.position}${player.injured ? ", lesionado" : ""}`} className="group flex w-full min-w-0 flex-col items-center gap-1 rounded-sm px-0.5 py-1 text-center transition hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--lime)]">
-            <span className={`relative grid size-14 shrink-0 place-items-center text-sm font-bold text-white transition group-hover:scale-110 ${player.photo ? "" : "overflow-hidden rounded-full border border-white/50 bg-[#343a32] group-hover:border-[var(--lime)]"}`}>
-                {player.photo ? <Image src={player.photo} alt="" fill sizes="56px" unoptimized className="object-contain" /> : player.name.split(" ").map((part) => part[0]).join("")}
-                {player.injured ? <span className="absolute -right-1 -top-1 grid size-6 place-items-center rounded-full border-2 border-[#1c2920] bg-red-600 text-white" title="Jugador lesionado"><Cross size={13} strokeWidth={3} /></span> : null}
-            </span>
-            <span className="max-w-full truncate text-[9px] font-semibold leading-tight text-white sm:text-[10px]">{player.name}</span>
-        </button>
-    );
-}
-
 function PlayerStatChart({ title, color, players, className = "" }: { title: string; color: string; players: Array<{ name: string; value: number }>; className?: string }) {
     const maxValue = Math.max(1, ...players.map((player) => player.value));
     return (
@@ -239,6 +228,8 @@ export function TeamDashboard({ squad, table, results, roundMatches, katsuCards,
     const [activeCompetition, setActiveCompetition] = useState<CompetitionId>("winter");
     const [expandedJornada, setExpandedJornada] = useState<number | null>(null);
     const [selectedChronicle, setSelectedChronicle] = useState<MatchItem | null>(null);
+    const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
+    const [cardTilt, setCardTilt] = useState({ x: 0, y: 0 });
     const emptyMessage = dataState === "error"
         ? "No se pudieron cargar datos. Revisa la conexión y las migraciones de Supabase."
         : "Todavía no hay registros en Supabase.";
@@ -259,13 +250,17 @@ export function TeamDashboard({ squad, table, results, roundMatches, katsuCards,
     ];
     const selectedCompetition = competitions.find(({ id }) => id === activeCompetition) ?? competitions[0];
     useEffect(() => {
-        if (!selectedChronicle) return;
+        if (!selectedChronicle && !selectedPlayer) return;
         const closeOnEscape = (event: KeyboardEvent) => {
-            if (event.key === "Escape") setSelectedChronicle(null);
+            if (event.key === "Escape") {
+                setSelectedChronicle(null);
+                setSelectedPlayer(null);
+                setCardTilt({ x: 0, y: 0 });
+            }
         };
         document.addEventListener("keydown", closeOnEscape);
         return () => document.removeEventListener("keydown", closeOnEscape);
-    }, [selectedChronicle]);
+    }, [selectedChronicle, selectedPlayer]);
     const roles = [
         { id: "goalkeeper", label: "Portero" },
         { id: "defender", label: "Cierre" },
@@ -286,9 +281,9 @@ export function TeamDashboard({ squad, table, results, roundMatches, katsuCards,
         return "unspecified";
     };
     const playersByRole = new Map(roles.map((role) => [role.id, squad.filter((player) => getRole(player.position) === role.id)]));
-    const openPlayerCard = (player: Player) => {
-        setActiveMenu("players");
-        window.setTimeout(() => document.getElementById(`player-${player.id}`)?.scrollIntoView({ behavior: "smooth", block: "center" }), 0);
+    const closePlayerCard = () => {
+        setSelectedPlayer(null);
+        setCardTilt({ x: 0, y: 0 });
     };
     const totals = squad.reduce((sum, player) => {
         const [yellow = "0", red = "0"] = player.cards.match(/\d+/g) ?? [];
@@ -444,31 +439,10 @@ export function TeamDashboard({ squad, table, results, roundMatches, katsuCards,
 
                 {activeMenu === "players" ? (
                     <section id="plantilla" className="py-10">
-                        <div className="mb-7 text-center"><p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--lime)]">El grupo</p><h2 className="mt-2 text-3xl font-black uppercase sm:text-4xl">Jugadores <span className="font-normal text-[var(--muted)]">/ {squad.length}</span></h2><p className="mt-3 text-sm text-[var(--muted)]">Selecciona un jugador en el campo para ir a su ficha y consultar sus estadísticas.</p></div>
+                        <div className="mb-7 text-center"><p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--lime)]">El grupo</p><h2 className="mt-2 text-3xl font-black uppercase sm:text-4xl">Jugadores <span className="font-normal text-[var(--muted)]">/ {squad.length}</span></h2><p className="mt-3 text-sm text-[var(--muted)]">Elige el modo de campo que prefieras y selecciona un jugador para abrir su ficha y consultar sus estadísticas.</p></div>
                         {squad.length ? (
-                            <div className="mb-10 overflow-hidden border border-[var(--line)] bg-[#1c2920] p-3 sm:p-6">
-                                <div className="mb-3 flex items-center justify-between text-[9px] font-bold uppercase tracking-[0.14em] text-white/50"><span>Campo de fútbol sala</span><span>Plantilla · 2026-2027</span></div>
-                                <div className="futsal-pitch relative mx-auto aspect-[2/3] w-full max-w-[520px] overflow-hidden border border-orange-300">
-                                    <div className="relative grid h-full grid-cols-4 grid-rows-4">
-                                        {[
-                                            { role: roles[0], placement: "col-start-2 col-span-2 row-start-1" },
-                                            { role: roles[1], placement: "col-start-1 col-span-4 row-start-2" },
-                                            { role: roles[2], placement: "col-start-1 col-span-2 row-start-3" },
-                                            { role: roles[3], placement: "col-start-3 col-span-2 row-start-3" },
-                                            { role: roles[4], placement: "col-start-1 col-span-4 row-start-4" },
-                                        ].map(({ role, placement }) => (
-                                            <div key={role.id} className={`z-[1] flex flex-col items-center justify-center px-1 py-2 ${placement}`}>
-                                                <p className="mb-1 bg-black/35 px-2 py-1 text-center text-[8px] font-bold uppercase tracking-[0.06em] text-white sm:text-[9px]">{role.label}</p>
-                                                <div className={role.id === "defender" || role.id === "pivot" ? "mx-auto grid w-fit max-w-full grid-cols-4 justify-items-center" : "flex w-full max-w-[320px] flex-wrap justify-center"}>{(playersByRole.get(role.id) ?? []).map((player) => <div key={player.id} className={role.id === "defender" || role.id === "pivot" ? "w-16 min-w-0" : "w-1/3 sm:w-1/4"}><PlayerMini player={player} onSelect={() => openPlayerCard(player)} /></div>)}</div>
-                                                {playersByRole.get(role.id)?.length === 0 ? <span className="bg-black/35 px-2 py-1 text-center text-[8px] text-white/80">Sin asignar</span> : null}
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                                {playersByRole.get("unspecified")?.length ? <div className="mt-3 border border-dashed border-white/20 p-3"><p className="mb-2 text-[9px] font-bold uppercase text-white/55">Posición por definir</p><div className="flex flex-wrap gap-2">{playersByRole.get("unspecified")?.map((player) => <div key={player.id} className="w-20"><PlayerMini player={player} onSelect={() => openPlayerCard(player)} /></div>)}</div></div> : null}
-                            </div>
-                        ) : null}
-                        {squad.length ? <div className="flex flex-wrap justify-center gap-4">{squad.map((player, index) => <PlayerCard key={player.name} player={player} index={index} />)}</div> : <p className="border-y border-[var(--line)] py-6 text-sm text-[var(--muted)]">{emptyMessage}</p>}
+                            <PlayerField playersByRole={playersByRole} roles={roles} onSelect={(player) => { setSelectedPlayer(player); setCardTilt({ x: 0, y: 0 }); }} />
+                        ) : <p className="border-y border-[var(--line)] py-6 text-sm text-[var(--muted)]">{emptyMessage}</p>}
                     </section>
                 ) : null}
 
@@ -533,7 +507,7 @@ export function TeamDashboard({ squad, table, results, roundMatches, katsuCards,
                             <div className="mx-auto flex max-w-4xl flex-wrap justify-center gap-3">
                                 {squad.filter((player) => player.injured).map((player) => (
                                     <article key={player.id} className="w-full overflow-hidden border border-red-300/30 bg-[var(--panel)] sm:w-[calc(50%-0.375rem)]">
-                                        <button type="button" onClick={() => openPlayerCard(player)} className="group flex w-full items-center gap-4 p-4 text-left transition hover:bg-white/[0.03] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--lime)]">
+                                        <button type="button" onClick={() => { setSelectedPlayer(player); setCardTilt({ x: 0, y: 0 }); }} className="group flex w-full items-center gap-4 p-4 text-left transition hover:bg-white/[0.03] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--lime)]">
                                             <span className="relative grid size-16 shrink-0 place-items-center overflow-hidden rounded-full border border-red-300/50 bg-black/30 text-lg font-black text-red-100">
                                                 {player.photo ? <Image src={player.photo} alt="" fill sizes="64px" unoptimized className="object-cover" /> : player.name.split(" ").map((part) => part[0]).join("")}
                                             </span>
@@ -604,6 +578,46 @@ export function TeamDashboard({ squad, table, results, roundMatches, katsuCards,
                                 <p key={index} className="whitespace-pre-wrap">{paragraph}</p>
                             ))}
                         </div>
+                    </section>
+                </div>
+            ) : null}
+            {selectedPlayer ? (
+                <div
+                    className="player-profile-backdrop fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-3 sm:p-8"
+                    onMouseDown={(event) => {
+                        if (event.target === event.currentTarget) closePlayerCard();
+                    }}
+                >
+                    <section
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="selected-player-title"
+                        className="player-profile-dialog relative max-h-[92vh] w-full max-w-xl overflow-y-auto p-2 sm:p-4"
+                    >
+                        <button
+                            type="button"
+                            aria-label="Cerrar ficha del jugador"
+                            onClick={closePlayerCard}
+                            className="player-profile-close absolute right-4 top-4 z-20 grid size-11 place-items-center border border-[var(--lime)]/70 bg-black/85 text-white transition hover:bg-[var(--lime)] hover:text-[var(--ink)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"
+                        >
+                            <X size={21} />
+                        </button>
+                        <h2 id="selected-player-title" className="sr-only">Ficha de {selectedPlayer.name}</h2>
+                        <div
+                            className="player-profile-card"
+                            onPointerMove={(event) => {
+                                if (event.pointerType !== "mouse") return;
+                                const bounds = event.currentTarget.getBoundingClientRect();
+                                const x = (event.clientX - bounds.left) / bounds.width - 0.5;
+                                const y = (event.clientY - bounds.top) / bounds.height - 0.5;
+                                setCardTilt({ x: x * 8, y: y * -8 });
+                            }}
+                            onPointerLeave={() => setCardTilt({ x: 0, y: 0 })}
+                            style={{ transform: `perspective(1200px) rotateX(${cardTilt.y}deg) rotateY(${cardTilt.x}deg)` }}
+                        >
+                            <PlayerCard player={selectedPlayer} index={0} featured />
+                        </div>
+                        <p className="mt-3 text-center text-[9px] font-bold uppercase tracking-[0.16em] text-white/50">Mueve el puntero sobre la carta · Esc para cerrar</p>
                     </section>
                 </div>
             ) : null}
