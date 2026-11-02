@@ -3,9 +3,11 @@
 import { FormEvent, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, Check, FileUp } from "lucide-react";
+import { AdminCallupForm, type CallupFormMatch } from "@/components/admin-callup-form";
 import { AdminKatsuManager } from "@/components/admin-katsu-manager";
 import { AdminInjuryManager } from "@/components/admin-injury-manager";
 import { AdminMatchChronicleManager } from "@/components/admin-match-chronicle-manager";
+import { AdminMediaManager, type MediaMatch, type MediaPlayer } from "@/components/admin-media-manager";
 import { ACTIVE_PHASE, ACTIVE_SEASON } from "@/lib/config";
 
 type KatsuMatch = { id: string; jornada: number; home: string; away: string; score: string | null; playerId: string | null };
@@ -13,7 +15,7 @@ type KatsuPlayer = { id: string; name: string; number: number | null };
 type InjuryPlayer = { id: string; name: string; number: number | null; injured: boolean; injuryDescription: string | null };
 type ChronicleMatch = { id: string; jornada: number; home: string; away: string; chronicle: string | null };
 
-export function AdminImporter({ katsuMatches, katsuPlayers, injuryPlayers, chronicleMatches }: { katsuMatches: KatsuMatch[]; katsuPlayers: KatsuPlayer[]; injuryPlayers: InjuryPlayer[]; chronicleMatches: ChronicleMatch[] }) {
+export function AdminImporter({ katsuMatches, katsuPlayers, injuryPlayers, chronicleMatches, callupMatches, mediaMatches, mediaPlayers }: { katsuMatches: KatsuMatch[]; katsuPlayers: KatsuPlayer[]; injuryPlayers: InjuryPlayer[]; chronicleMatches: ChronicleMatch[]; callupMatches: CallupFormMatch[]; mediaMatches: MediaMatch[]; mediaPlayers: MediaPlayer[] }) {
     const [resultsMessage, setResultsMessage] = useState("");
     const [resultsError, setResultsError] = useState(false);
     const [resultsBusy, setResultsBusy] = useState(false);
@@ -156,6 +158,10 @@ export function AdminImporter({ katsuMatches, katsuPlayers, injuryPlayers, chron
                 <details className="border border-[var(--line)]">
                 <summary className="cursor-pointer list-none p-4 text-base font-black uppercase marker:hidden">2. Convocatoria y horario definitivo</summary>
                 <div className="border-t border-[var(--line)] p-4">
+                <p className="mt-2 text-sm leading-6 text-[var(--muted)]">Elige el partido, marca a los convocados y, cuando se conozcan, la fecha, la hora y el campo. Se guarda al momento y se ve en la web.</p>
+                <AdminCallupForm matches={callupMatches} players={katsuPlayers} />
+                <details className="mt-6 border-t border-[var(--line)] pt-4">
+                <summary className="cursor-pointer text-xs font-bold uppercase text-[var(--muted)]">Carga masiva por CSV</summary>
                 <p className="mt-2 text-sm leading-6 text-[var(--muted)]">Puedes cargar las convocatorias semana a semana, aunque aún no se conozcan la fecha, la hora o el campo: la fecha prevista es solo informativa y no se convierte en horario confirmado. En la columna «convocado», marca sí/no para cada jugador de la jornada; las filas vacías conservan su estado anterior. Cuando se confirme, añade fecha y hora definitivas juntas y el campo una sola vez por partido. Una carga posterior conserva el horario confirmado si esos campos se dejan vacíos.</p>
                 <div className="mt-4 flex flex-wrap gap-3">
                     <a href={`/api/admin/templates?tipo=convocatoria&fase=${ACTIVE_PHASE}`} className="inline-flex border border-[var(--lime)] px-4 py-3 text-xs font-bold uppercase text-[var(--lime)] hover:bg-[var(--lime)] hover:text-[var(--ink)]">Descargar plantilla actualizada</a>
@@ -169,6 +175,7 @@ export function AdminImporter({ katsuMatches, katsuPlayers, injuryPlayers, chron
                     {callupsMessage && <p role="status" className={`mt-4 text-sm ${callupsError ? "text-red-300" : "text-[var(--lime)]"}`}>{callupsMessage}</p>}
                     <button disabled={callupsBusy} className="mt-5 inline-flex items-center gap-2 bg-[var(--lime)] px-4 py-3 text-xs font-black uppercase text-[var(--ink)] disabled:opacity-60">{callupsBusy ? "Procesando..." : <><FileUp size={15} /> Importar convocatoria</>}</button>
                 </form>
+                </details>
                 </div>
                 </details>
             <details className="border border-[var(--line)]">
@@ -207,6 +214,13 @@ export function AdminImporter({ katsuMatches, katsuPlayers, injuryPlayers, chron
                 <div className="border-t border-[var(--line)] p-4">
                 <p className="mt-2 text-sm leading-6 text-[var(--muted)]">Escribe una crónica para cada partido del Bayern. Puedes incluir hasta 100.000 caracteres; deja una línea en blanco entre párrafos. Si borras el texto y guardas, la crónica dejará de mostrarse en la página pública.</p>
                 <AdminMatchChronicleManager matches={chronicleMatches} />
+                </div>
+            </details>
+            <details className="border border-[var(--line)]">
+                <summary className="cursor-pointer list-none p-4 text-base font-black uppercase marker:hidden">7. Fotos y vídeos</summary>
+                <div className="border-t border-[var(--line)] p-4">
+                <p className="mt-2 text-sm leading-6 text-[var(--muted)]">Sube fotos desde la galería o la cámara del móvil. Se guardan en Supabase Storage y se ven en la web al momento.</p>
+                <AdminMediaManager players={mediaPlayers} matches={mediaMatches} />
                 </div>
             </details>
                 </div>

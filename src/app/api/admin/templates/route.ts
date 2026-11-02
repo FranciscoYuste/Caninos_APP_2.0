@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { competitionSlug, isCompetitionPhase, type CompetitionPhase } from "@/lib/competitions";
 import { ACTIVE_PHASE, ACTIVE_SEASON as SEASON, isFeaturedMatch } from "@/lib/config";
+import { madridDate, madridTime } from "@/lib/madrid-time";
 import { requireAdmin } from "@/lib/supabase/require-admin";
 
 export const runtime = "nodejs";
@@ -42,24 +43,6 @@ function csvResponse(filename: string, rows: Array<Array<string | number | null 
             "Cache-Control": "private, no-store",
         },
     });
-}
-
-function madridDate(value: string): string {
-    return new Intl.DateTimeFormat("sv-SE", {
-        timeZone: "Europe/Madrid",
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-    }).format(new Date(value));
-}
-
-function madridTime(value: string): string {
-    return new Intl.DateTimeFormat("en-GB", {
-        timeZone: "Europe/Madrid",
-        hour: "2-digit",
-        minute: "2-digit",
-        hourCycle: "h23",
-    }).format(new Date(value));
 }
 
 export async function GET(request: Request) {

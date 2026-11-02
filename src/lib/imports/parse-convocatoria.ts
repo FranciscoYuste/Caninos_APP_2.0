@@ -22,7 +22,7 @@ function parseOptionalBoolean(value: string): boolean | null {
     throw new Error(`Valor no válido para convocado: ${value}. Usa sí o no.`);
 }
 
-function normalizeDate(value: string): string {
+export function normalizeDate(value: string): string {
     const input = value.trim();
     const iso = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(input);
     const spanish = /^(\d{1,2})[/.](\d{1,2})[/.](\d{2}|\d{4})$/.exec(input);
@@ -40,7 +40,7 @@ function normalizeDate(value: string): string {
     return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 }
 
-function normalizeTime(value: string): string {
+export function normalizeTime(value: string): string {
     const input = value.trim();
     const match = /^([01]?\d|2[0-3]):([0-5]\d)(?::([0-5]\d))?$/.exec(input);
     if (!match) throw new Error(`Hora no válida: ${input}. Usa HH:MM.`);
