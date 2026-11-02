@@ -2,131 +2,170 @@
 
 import Image from "next/image";
 import { useEffect, useRef } from "react";
-import { Cross } from "lucide-react";
+import { Cross, Star } from "lucide-react";
+import { useCardSpin } from "@/components/team/use-card-spin";
 import type { Player } from "@/lib/team-types";
 
-function PlayerVideo({ player, autoPlay = false }: { player: Player; autoPlay?: boolean }) {
+const POSITION_CODES: Record<string, string> = {
+    Portero: "POR",
+    Cierre: "CIE",
+    "Ala izquierda": "ALA",
+    "Ala derecha": "ALA",
+    "Pívot": "PÍV",
+};
+
+function initials(name: string): string {
+    return name.split(" ").map((part) => part[0]).join("").slice(0, 3);
+}
+
+// Vídeo de la ficha: se reproduce una vez, sin sonido, y se queda en el último fotograma.
+function PlayerVideo({ player }: { player: Player }) {
     const videoRef = useRef<HTMLVideoElement>(null);
-    const isActive = useRef(autoPlay);
-
-    const seekToLastFrame = () => {
-        const video = videoRef.current;
-        if (video && Number.isFinite(video.duration) && video.duration > 0) {
-            video.currentTime = Math.max(0, video.duration - 0.05);
-        }
-    };
-
-    const playVideo = () => {
-        const video = videoRef.current;
-        if (!video) return;
-
-        isActive.current = true;
-        if (video.readyState >= HTMLMediaElement.HAVE_METADATA) video.currentTime = 0;
-        void video.play().catch((error: unknown) => {
-            console.error(`No se pudo reproducir el vídeo de ${player.name}.`, error);
-        });
-    };
-
-    const freezeVideo = () => {
-        const video = videoRef.current;
-        isActive.current = false;
-        if (!video) return;
-
-        video.pause();
-        seekToLastFrame();
-    };
 
     useEffect(() => {
-        if (!autoPlay) return;
-
-        const video = videoRef.current;
-        if (!video) return;
-
-        isActive.current = true;
-        void video.play().catch((error: unknown) => {
+        void videoRef.current?.play().catch((error: unknown) => {
             console.error(`No se pudo reproducir el vídeo de ${player.name}.`, error);
         });
-    }, [autoPlay, player.name]);
+    }, [player.name]);
 
     return (
         <video
             ref={videoRef}
-            className="h-full w-full object-contain focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--lime)]"
+            className="h-full w-full object-contain object-bottom"
             src={player.video ?? undefined}
-            poster={autoPlay ? undefined : player.photo ?? undefined}
             muted
             playsInline
-            autoPlay={autoPlay}
-            loop={false}
-            preload={autoPlay ? "auto" : "metadata"}
-            tabIndex={0}
-            aria-label={autoPlay ? `Vídeo de ${player.name}` : `Vídeo de ${player.name}. Pasa el ratón o enfoca para reproducir.`}
-            onLoadedMetadata={() => {
-                if (!isActive.current) seekToLastFrame();
-            }}
-            onMouseEnter={autoPlay ? undefined : playVideo}
-            onMouseLeave={autoPlay ? undefined : freezeVideo}
-            onFocus={autoPlay ? undefined : playVideo}
-            onBlur={autoPlay ? undefined : freezeVideo}
+            autoPlay
+            preload="auto"
+            aria-label={`Vídeo de ${player.name}`}
             onEnded={(event) => {
-                event.currentTarget.pause();
-                seekToLastFrame();
+                const video = event.currentTarget;
+                video.pause();
+                if (Number.isFinite(video.duration)) video.currentTime = Math.max(0, video.duration - 0.05);
             }}
             onError={(event) => console.error(`Error al cargar el vídeo de ${player.name}.`, event.currentTarget.error)}
         />
     );
 }
 
-export function PlayerCard({ player, index, featured = false }: { player: Player; index: number; featured?: boolean }) {
+function CardShine() {
+    return <><span className="collect-holo" aria-hidden="true" /><span className="collect-glare" aria-hidden="true" /></>;
+}
+
+// Carta coleccionable del jugador: delante la foto y los totales, detrás el partido a partido.
+export function PlayerCard({ player }: { player: Player }) {
+    const { ref, flipped, handlers } = useCardSpin<HTMLDivElement>();
+    const katsuRounds = player.katsuRounds ?? [];
+    const matches = player.matchStats ?? [];
+    const maxGoals = Math.max(1, ...matches.map((match) => match.goals));
+    const best = matches.reduce<(typeof matches)[number] | null>((top, match) => (match.goals > (top?.goals ?? 0) ? match : top), null);
+    const goalsPerGame = player.games ? (player.goals / player.games).toLocaleString("es-ES", { maximumFractionDigits: 2 }) : "—";
+    const positionCode = POSITION_CODES[player.position];
+    const stats = [
+        { value: player.goals, label: "GOL" },
+        { value: player.assists, label: "ASI" },
+        { value: player.games, label: "CONV" },
+        { value: player.penalties, label: "PEN" },
+        { value: player.doublePenalties, label: "DOB" },
+        { value: player.directFreeKicks, label: "FD" },
+    ];
+
     return (
-        <article id={`player-${player.id}`} className={`player-card-shell reveal group w-full overflow-hidden ${featured ? "player-card-featured" : "scroll-mt-24 sm:w-[calc(50%-0.5rem)] lg:w-[calc(25%-0.75rem)]"}`} style={{ animationDelay: `${index * 80}ms` }}>
-            <div className={`player-card-media relative aspect-[4/5] overflow-hidden ${player.video ? "bg-black" : "player-photo"}`}>
-                {player.video
-                    ? <PlayerVideo player={player} autoPlay={featured} />
-                    : player.photo
-                        ? <Image src={player.photo} alt={`Foto de ${player.name}`} width={600} height={416} unoptimized className="h-full w-full object-cover" />
-                        : null}
-                <span className="player-card-number absolute left-2 top-3 font-sans text-[6rem] font-black italic leading-[0.75] sm:text-[8rem]">
-                    {player.number ?? "—"}
-                </span>
-                <span className="player-card-crest absolute right-3 top-3">
-                    <Image src="/fotos/escudo-256.png" alt="Escudo de Bayern D.L. Caninos" width={80} height={80} className="size-20 object-contain" />
-                </span>
-                {player.injured ? <span className="absolute right-4 top-24 z-[2] inline-flex items-center gap-1.5 border border-red-300/70 bg-red-950/85 px-2 py-1 text-[10px] font-black uppercase text-red-100"><Cross size={13} strokeWidth={3} /> Lesionado</span> : null}
-                <div className="player-card-caption absolute inset-x-0 bottom-0 px-4 pb-4 pt-14">
-                    <p className="text-xl font-black uppercase leading-tight text-white sm:text-lg">{player.name}</p>
-                    <p className="mt-1 text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--lime)]">{player.position}</p>
-                </div>
-            </div>
-            <div className="player-card-stats p-4">
-                <div className="grid grid-cols-4 divide-x divide-white/15">
-                    {[{ value: player.goals, label: "GOL" }, { value: player.assists, label: "ASI" }, { value: player.games, label: "CONV." }, { value: `${player.yellowCards}A ${player.redCards}R`, label: "TARJ." }].map((stat) => (
-                        <div key={stat.label} className="flex min-h-20 min-w-0 flex-col items-center justify-center gap-2 px-1 text-center">
-                            <p className={`whitespace-nowrap font-mono text-2xl font-black leading-none tabular-nums text-white ${stat.label === "TARJ." ? "md:text-base md:tracking-[-0.08em] lg:text-lg" : "sm:text-3xl"}`}>{stat.value}</p>
-                            <p className="whitespace-nowrap text-[10px] font-bold tracking-[0.12em] text-[var(--muted)]">{stat.label}</p>
+        <div id={`player-${player.id}`} className="collect-stage">
+            <div
+                ref={ref}
+                role="button"
+                tabIndex={0}
+                aria-pressed={flipped}
+                aria-label={`Carta de ${player.name}. ${flipped ? "Muestra el partido a partido" : "Muestra los totales"}. Pulsa para darle la vuelta o arrástrala a un lado.`}
+                className="collect-card"
+                {...handlers}
+            >
+                <div className="collect-face">
+                    <div className="collect-face-in">
+                        <div className="collect-media">
+                            {player.video
+                                ? <PlayerVideo player={player} />
+                                : player.photo
+                                    ? <Image src={player.photo} alt={`Foto de ${player.name}`} fill unoptimized sizes="320px" className="object-contain object-bottom" draggable={false} />
+                                    : <span className="collect-initials">{initials(player.name)}</span>}
                         </div>
-                    ))}
+                        <div className="collect-corner">
+                            <span className="collect-number">{player.number ?? "—"}</span>
+                            {positionCode ? <span className="collect-position">{positionCode}</span> : null}
+                        </div>
+                        <Image src="/fotos/escudo-256.png" alt="" width={56} height={56} className="collect-crest" draggable={false} />
+                        <div className="collect-badges">
+                            {katsuRounds.length ? <span className="collect-badge" title={`Jugador KATSU ${katsuRounds.length} ${katsuRounds.length === 1 ? "vez" : "veces"}`}><Star size={11} fill="currentColor" />{katsuRounds.length}</span> : null}
+                            {player.injured ? <span className="collect-badge collect-badge-injured" title="Lesionado"><Cross size={14} strokeWidth={3} /></span> : null}
+                        </div>
+                        <div className="collect-plate">
+                            <p className="collect-name">{player.name}</p>
+                            <span className="collect-rule" />
+                            <div className="collect-stats">
+                                {stats.map((stat) => <p key={stat.label}><b>{stat.value}</b><span>{stat.label}</span></p>)}
+                            </div>
+                            <div className="collect-foot">
+                                <span>{player.position}</span>
+                                <span>{player.yellowCards} A · {player.redCards} R</span>
+                            </div>
+                        </div>
+                        <CardShine />
+                    </div>
                 </div>
-                <div className="mt-4 flex flex-wrap justify-center gap-2 border-t border-white/10 pt-4 text-[10px] text-[var(--muted)]">
-                    <span className="inline-flex min-h-10 items-center justify-center border border-[var(--line)] px-3 py-2 text-center font-semibold">PEN {player.penalties}</span>
-                    <span className="inline-flex min-h-10 items-center justify-center border border-[var(--line)] px-3 py-2 text-center font-semibold">DOBLES {player.doublePenalties}</span>
-                    <span className="inline-flex min-h-10 items-center justify-center border border-[var(--line)] px-3 py-2 text-center font-semibold">FALTAS DIR. {player.directFreeKicks}</span>
-                </div>
-                {player.matchStats?.length ? (
-                    <details className="mt-3 border-t border-white/10 pt-3">
-                        <summary className="cursor-pointer text-[10px] font-bold uppercase tracking-[0.1em] text-[var(--lime)]">Detalle por partido</summary>
-                        <div className="mt-3 space-y-3">
-                            {player.matchStats.map((match) => (
-                                <div key={match.label} className="border-l border-[var(--lime)]/50 pl-3 text-[10px] leading-5 text-[var(--muted)]">
-                                    <p className="font-semibold text-white/80">{match.label}</p>
-                                    <p>{match.goals} goles · {match.assists} asistencias · PEN {match.penalties} · DOBLES {match.doublePenalties}</p>
-                                    <p>Faltas directas {match.directFreeKicks} · {match.yellowCards}A {match.redCards}R</p>
+
+                <div className="collect-face collect-back">
+                    <div className="collect-face-in collect-back-in">
+                        <div className="collect-back-head">
+                            <b>{player.name}</b>
+                            <span>#{player.number ?? "—"}</span>
+                        </div>
+                        <p className="collect-back-title">Goles por jornada{katsuRounds.length ? " · ★ KATSU" : ""}</p>
+                        {matches.length ? (
+                            <div>
+                                <div className="collect-bars">
+                                    {matches.map((match) => (
+                                        <i key={match.jornada} className={katsuRounds.includes(match.jornada) ? "is-katsu" : ""} style={{ height: `${Math.max(4, (match.goals / maxGoals) * 100)}%` }} title={`${match.label}: ${match.goals} goles`} />
+                                    ))}
                                 </div>
-                            ))}
-                        </div>
-                    </details>
-                ) : null}
+                                <div className="collect-bars-axis">
+                                    {matches.length <= 12
+                                        ? matches.map((match) => <span key={match.jornada}>J{match.jornada}</span>)
+                                        : <><span>J{matches[0].jornada}</span><span>J{matches.at(-1)?.jornada}</span></>}
+                                </div>
+                            </div>
+                        ) : <p className="collect-empty">Todavía no hay estadísticas por partido.</p>}
+                        <dl className="collect-rows">
+                            <div><dt>Mejor partido</dt><dd>{best ? `${best.goals} ${best.goals === 1 ? "gol" : "goles"} · J${best.jornada}` : "—"}</dd></div>
+                            <div><dt>Goles por convocatoria</dt><dd>{goalsPerGame}</dd></div>
+                            <div><dt>Tarjetas</dt><dd>{player.yellowCards} A · {player.redCards} R</dd></div>
+                            <div><dt>Jugador KATSU</dt><dd>{katsuRounds.length ? katsuRounds.map((round) => `J${round}`).join(", ") : "Todavía no"}</dd></div>
+                            {player.injured ? <div><dt>Lesión</dt><dd>{player.injuryDescription || "Lesionado"}</dd></div> : null}
+                        </dl>
+                        <Image src="/fotos/escudo-256.png" alt="" width={40} height={40} className="collect-back-crest" draggable={false} />
+                        <CardShine />
+                    </div>
+                </div>
             </div>
-        </article>
+        </div>
+    );
+}
+
+// Detalle completo de cada partido, debajo de la carta.
+export function PlayerMatchDetail({ player }: { player: Player }) {
+    if (!player.matchStats?.length) return null;
+    return (
+        <details className="mx-auto mt-4 w-full max-w-[320px] border border-[var(--line)] bg-black/60 px-4 py-3">
+            <summary className="cursor-pointer text-[10px] font-bold uppercase tracking-[0.1em] text-[var(--lime)]">Detalle por partido</summary>
+            <div className="mt-3 space-y-3">
+                {player.matchStats.map((match) => (
+                    <div key={match.jornada} className="border-l border-[var(--lime)]/50 pl-3 text-[11px] leading-5 text-[var(--muted)]">
+                        <p className="font-semibold text-white/85">{match.label}</p>
+                        <p>{match.goals} goles · {match.assists} asistencias · PEN {match.penalties} · DOBLES {match.doublePenalties}</p>
+                        <p>Faltas directas {match.directFreeKicks} · {match.yellowCards} A {match.redCards} R</p>
+                    </div>
+                ))}
+            </div>
+        </details>
     );
 }

@@ -1,7 +1,11 @@
 import type { Metadata } from "next";
+import { Barlow_Condensed } from "next/font/google";
 import { headers } from "next/headers";
 import { FEATURED_TEAM } from "@/lib/config";
 import "./globals.css";
+
+// Letra estrecha de las cartas de jugador y KATSU.
+const cardFont = Barlow_Condensed({ subsets: ["latin"], weight: ["600", "800", "900"], style: ["normal", "italic"], variable: "--font-card", display: "swap" });
 
 const description = `Plantilla, calendario, resultados y estadísticas de ${FEATURED_TEAM}.`;
 
@@ -30,7 +34,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
     return (
-        <html lang="es">
+        <html lang="es" className={cardFont.variable}>
             <body>{children}</body>
         </html>
     );

@@ -187,11 +187,6 @@ body {
     animation: player-profile-card-in 550ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 
-.player-card-featured {
-    width: 100%;
-    box-shadow: 0 20px 55px #0009, 0 0 30px #f2cf1820;
-}
-
 @keyframes player-profile-backdrop-in {
     from { opacity: 0; }
     to { opacity: 1; }
@@ -218,44 +213,372 @@ body {
     filter: drop-shadow(0 0 5px #f2cf18) drop-shadow(0 0 12px #f2cf1880);
 }
 
-.player-photo {
-    background: radial-gradient(ellipse at 50% 18%, #75846d 0 11%, transparent 11.5%),
-        radial-gradient(ellipse at 50% 70%, #556052 0 28%, transparent 28.5%),
-        linear-gradient(145deg, #41483e, #202520 62%, #171a17);
+@property --shine {
+    syntax: "<percentage>";
+    inherits: true;
+    initial-value: 50%;
 }
 
-.player-card-shell {
+/* Carta coleccionable (ficha del jugador). Colores del escudo: amarillo y negro con rombos.
+   El giro y --shine los escribe use-card-spin.ts. */
+.collect-stage {
+    --rombos: repeating-linear-gradient(45deg, transparent 0 14px, var(--lime) 14px 15px), repeating-linear-gradient(-45deg, transparent 0 14px, var(--lime) 14px 15px);
+    display: grid;
+    place-items: center;
+    padding: 8px 0;
+    perspective: 1000px;
+}
+
+.collect-card {
     position: relative;
-    border: 1px solid #f2cf1870;
-    background: #080908;
-    isolation: isolate;
-    box-shadow: 0 12px 30px #00000035;
-    transition: border-color 220ms ease, transform 220ms ease, box-shadow 220ms ease;
+    width: min(320px, 86vw);
+    aspect-ratio: 5 / 7;
+    cursor: grab;
+    touch-action: pan-y;
+    transform-style: preserve-3d;
+    user-select: none;
+    -webkit-user-select: none;
+    will-change: transform;
 }
 
-.player-card-shell::before {
+.collect-card:active {
+    cursor: grabbing;
+}
+
+.collect-card:focus-visible {
+    outline: 2px solid var(--lime);
+    outline-offset: 6px;
+}
+
+.collect-face {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    padding: 7px;
+    border-radius: 14px;
+    background: linear-gradient(150deg, #fff2a0 0%, var(--lime) 18%, #9c7b05 45%, var(--lime) 62%, #1a1a10 63%, #1a1a10 66%, var(--lime) 67%, #9c7b05 100%);
+    box-shadow: 0 24px 50px #000b, 0 0 0 1px #0008;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+}
+
+.collect-back {
+    transform: rotateY(180deg);
+}
+
+.collect-face-in {
+    position: relative;
+    height: 100%;
+    overflow: hidden;
+    border-radius: 9px;
+    background: radial-gradient(ellipse 75% 50% at 50% 40%, #f2cf1840 0%, transparent 70%), linear-gradient(180deg, #151510, #070806 80%);
+    font-family: var(--font-card), "Arial Narrow", sans-serif;
+}
+
+.collect-face-in::before {
+    position: absolute;
+    inset: 0;
+    background: var(--rombos);
+    content: "";
+    opacity: 0.07;
+}
+
+/* Holográfico: los rombos solo brillan donde pasa la franja de luz, que se mueve con el giro. */
+.collect-holo {
+    position: absolute;
+    z-index: 4;
+    inset: 0;
+    background: var(--rombos), linear-gradient(105deg, transparent 30%, #fff6 45%, #fff2a0 50%, #fff6 55%, transparent 70%);
+    background-position: 0 0, var(--shine) 0;
+    background-size: auto, 300% 100%;
+    mix-blend-mode: color-dodge;
+    opacity: 0.85;
+    pointer-events: none;
+    -webkit-mask-image: linear-gradient(105deg, transparent calc(var(--shine) - 30%), #000 var(--shine), transparent calc(var(--shine) + 30%));
+    mask-image: linear-gradient(105deg, transparent calc(var(--shine) - 30%), #000 var(--shine), transparent calc(var(--shine) + 30%));
+}
+
+.collect-glare {
+    position: absolute;
+    z-index: 5;
+    inset: 0;
+    background: radial-gradient(circle at var(--shine) 20%, #ffffff30, transparent 45%);
+    pointer-events: none;
+}
+
+.collect-media {
     position: absolute;
     z-index: 2;
-    inset: 0;
-    border-top: 3px solid var(--lime);
-    content: "";
+    inset: 12% 2% 31% 14%;
     pointer-events: none;
 }
 
-.player-card-shell:hover {
-    transform: translateY(-3px);
-    border-color: var(--lime);
-    box-shadow: 0 16px 36px #00000055, 0 0 18px #f2cf1815;
+.collect-initials {
+    display: grid;
+    height: 100%;
+    place-items: center;
+    color: var(--lime);
+    font-size: 5.5rem;
+    font-weight: 900;
 }
 
-.player-card-media::before {
+.collect-corner {
     position: absolute;
-    z-index: 1;
-    inset: 5px;
-    border: 1px solid #f2cf1855;
-    content: "";
-    pointer-events: none;
-    transition: inset 220ms ease, border-color 220ms ease;
+    z-index: 3;
+    top: 10px;
+    left: 12px;
+    display: grid;
+    justify-items: center;
+    gap: 3px;
+}
+
+.collect-number {
+    color: var(--lime);
+    font-size: 4.2rem;
+    font-style: italic;
+    font-weight: 900;
+    line-height: 0.8;
+    text-shadow: 0 3px 0 #000;
+}
+
+.collect-position {
+    padding: 3px 7px;
+    background: var(--lime);
+    color: #0b0b08;
+    font-size: 0.9rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    line-height: 1;
+}
+
+.collect-crest {
+    position: absolute;
+    z-index: 3;
+    top: 12px;
+    right: 12px;
+    width: 56px;
+    height: 56px;
+    filter: drop-shadow(0 0 10px #f2cf1860);
+}
+
+.collect-badges {
+    position: absolute;
+    z-index: 3;
+    top: 108px;
+    left: 14px;
+    display: grid;
+    gap: 6px;
+}
+
+.collect-badge {
+    display: inline-flex;
+    width: 36px;
+    height: 36px;
+    align-items: center;
+    justify-content: center;
+    gap: 1px;
+    border: 1px solid var(--lime);
+    border-radius: 50%;
+    background: #0b0b08dd;
+    color: var(--lime);
+    font-size: 0.85rem;
+    font-weight: 800;
+}
+
+.collect-badge-injured {
+    border-color: #ff8f8f;
+    background: #5a0f12dd;
+    color: #ffd0d0;
+}
+
+.collect-plate {
+    position: absolute;
+    z-index: 3;
+    inset: auto 0 0;
+    padding: 26px 10px 10px;
+    background: linear-gradient(0deg, #070806 62%, #07080600);
+}
+
+.collect-name {
+    overflow: hidden;
+    color: white;
+    font-size: 2rem;
+    font-weight: 900;
+    letter-spacing: 0.02em;
+    line-height: 1;
+    text-align: center;
+    text-overflow: ellipsis;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.collect-rule {
+    display: block;
+    height: 2px;
+    margin: 7px 14px;
+    background: linear-gradient(90deg, transparent, var(--lime), transparent);
+}
+
+.collect-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 5px 2px;
+}
+
+.collect-stats p {
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    gap: 5px;
+}
+
+.collect-stats b {
+    color: white;
+    font-size: 1.4rem;
+    font-variant-numeric: tabular-nums;
+    font-weight: 800;
+    line-height: 1;
+}
+
+.collect-stats span {
+    color: var(--lime);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+}
+
+.collect-foot {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+}
+
+.collect-back-in {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 16px 14px;
+}
+
+.collect-back-in > * {
+    position: relative;
+    z-index: 3;
+}
+
+.collect-back-in > .collect-holo,
+.collect-back-in > .collect-glare {
+    position: absolute;
+}
+
+.collect-back-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.collect-back-head b {
+    overflow: hidden;
+    color: white;
+    font-size: 1.6rem;
+    font-weight: 900;
+    line-height: 1;
+    text-overflow: ellipsis;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.collect-back-head span {
+    color: var(--lime);
+    font-size: 1.3rem;
+    font-style: italic;
+    font-weight: 900;
+}
+
+.collect-back-title {
+    color: var(--muted);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+}
+
+.collect-bars {
+    display: flex;
+    height: 72px;
+    align-items: flex-end;
+    gap: 3px;
+    padding-bottom: 2px;
+    border-bottom: 1px solid var(--line);
+}
+
+.collect-bars i {
+    position: relative;
+    min-height: 3px;
+    flex: 1;
+    background: linear-gradient(0deg, #9c7b05, var(--lime));
+}
+
+.collect-bars i.is-katsu::after {
+    position: absolute;
+    top: -15px;
+    left: 50%;
+    color: var(--lime);
+    content: "★";
+    font-size: 10px;
+    font-style: normal;
+    transform: translateX(-50%);
+}
+
+.collect-bars-axis {
+    display: flex;
+    justify-content: space-between;
+    gap: 3px;
+    margin-top: 3px;
+    color: var(--muted);
+    font-size: 0.6rem;
+    font-weight: 700;
+}
+
+.collect-bars-axis span {
+    flex: 1;
+    text-align: center;
+}
+
+.collect-empty {
+    color: var(--muted);
+    font-size: 0.85rem;
+}
+
+.collect-rows div {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 6px 0;
+    border-bottom: 1px solid #ffffff14;
+    font-size: 0.85rem;
+}
+
+.collect-rows dt {
+    color: var(--muted);
+}
+
+.collect-rows dd {
+    color: white;
+    font-weight: 800;
+    text-align: right;
+}
+
+.collect-back-crest {
+    width: 40px;
+    height: 40px;
+    margin: auto auto 0;
+    opacity: 0.8;
 }
 
 .player-card-number {
@@ -267,46 +590,6 @@ body {
 .player-card-crest {
     z-index: 3;
     filter: drop-shadow(0 0 12px #f2cf1870);
-}
-
-.player-card-caption {
-    z-index: 2;
-    background: linear-gradient(0deg, #050605f2, #050605c9 68%, transparent);
-}
-
-.player-card-stats {
-    background: #080908;
-}
-
-.player-card-stats p:first-child {
-    text-shadow: 0 0 12px #ffffff30;
-}
-
-.player-card-media::after {
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(115deg, transparent 32%, #ffffff17 48%, transparent 62%);
-    content: "";
-    pointer-events: none;
-    transform: translateX(-110%);
-    transition: transform 650ms ease;
-}
-
-.player-card-shell:hover .player-card-media::before {
-    inset: 9px;
-    border-color: var(--lime);
-}
-
-.player-card-shell:hover .player-card-media::after {
-    transform: translateX(110%);
-}
-
-.player-card-media img {
-    transition: transform 450ms ease;
-}
-
-.group:hover .player-card-media img {
-    transform: scale(1.045);
 }
 
 .reveal {
@@ -482,18 +765,6 @@ body {
     *::after {
         scroll-behavior: auto !important;
         animation-duration: 0.01ms !important;
-    }
-
-    .player-card-media::before,
-    .player-card-media::after,
-    .player-card-media img,
-    .player-card-media video {
-        transition: none !important;
-        transform: none !important;
-    }
-
-    .player-card-shell {
-        transition: none !important;
     }
 
     .katsu-card-shell,

@@ -15,7 +15,8 @@ export type Player = {
     injuryDescription?: string | null;
     photo?: string | null;
     video?: string | null;
-    matchStats?: Array<{ label: string; goals: number; assists: number; penalties: string; doublePenalties: string; directFreeKicks: number; yellowCards: number; redCards: number }>;
+    katsuRounds?: number[];
+    matchStats?: Array<{ jornada: number; label: string; goals: number; assists: number; penalties: string; doublePenalties: string; directFreeKicks: number; yellowCards: number; redCards: number }>;
 };
 export type MatchItem = { key: string; jornada: number; date: string; startsAt: string | null; field: string | null; home: string; away: string; score: string; chronicle: string | null; finalScore?: string | null; status: string; callupPhotoUrl?: string | null; callups?: Array<{ name: string; calledUp: boolean }> };
 export type RoundMatchItem = { key: string; jornada: number; home: string; away: string; score: string; homeGoals: number | null; awayGoals: number | null };

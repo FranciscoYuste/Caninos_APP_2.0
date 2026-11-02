@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { CompetitionFrame } from "@/components/team/competition-frame";
-import { PlayerCard } from "@/components/team/player-card";
+import { PlayerCard, PlayerMatchDetail } from "@/components/team/player-card";
 import { ShareButton } from "@/components/team/share-button";
 import { competitionPath } from "@/lib/competition-paths";
 import { pageMetadata } from "@/lib/metadata";
@@ -36,8 +36,9 @@ export default async function PlayerPage({ params }: PlayerPageProps) {
                 </Link>
                 <p className="mt-6 text-center text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--lime)]">{competition.name} · {competition.season}</p>
                 <div className="mt-3">
-                    <PlayerCard player={player} index={0} featured />
+                    <PlayerCard player={player} />
                 </div>
+                <PlayerMatchDetail player={player} />
                 <div className="mt-4 flex justify-center">
                     <ShareButton path={`/jugador/${player.id}`} title={`Ficha de ${player.name}`} text={`🃏 Ficha de ${player.name}`} />
                 </div>

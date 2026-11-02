@@ -111,6 +111,7 @@ export const getTeamData = cache(async (season: string, phase: string, group: st
                         : "";
                 const detail = matchStats.get(record.jugador_id) ?? [];
                 detail.push({
+                    jornada: fixture.jornada,
                     label: `J${fixture.jornada}${date ? ` · ${date}` : ""} vs ${opponent}`,
                     goals: record.goles,
                     assists: record.asistencias,
@@ -130,6 +131,11 @@ export const getTeamData = cache(async (season: string, phase: string, group: st
             const players = matchCallups.get(callup.partido_id) ?? new Set<string>();
             if (callup.convocado) players.add(callup.jugador_id);
             matchCallups.set(callup.partido_id, players);
+        }
+        // Jornadas en las que cada jugador fue KATSU, para su carta.
+        const katsuRounds = new Map<string, number[]>();
+        for (const match of (matchResult.data ?? []).filter(isFeaturedMatch)) {
+            if (match.jugador_katsu_id) katsuRounds.set(match.jugador_katsu_id, [...(katsuRounds.get(match.jugador_katsu_id) ?? []), match.jornada]);
         }
         // Plantilla: jugadores activos y, en temporadas pasadas, también quienes ya no están pero jugaron esta competición.
         const squad: Player[] = ((playerResult.data ?? []) as unknown as PlayerRecord[])
@@ -153,7 +159,8 @@ export const getTeamData = cache(async (season: string, phase: string, group: st
                 directFreeKicks: totals?.faltas_directas_marcadas ?? 0,
                 injured: player.lesionado,
                 injuryDescription: player.descripcion_lesion,
-                matchStats: matchStats.get(player.id),
+                katsuRounds: (katsuRounds.get(player.id) ?? []).sort((a, b) => a - b),
+                matchStats: matchStats.get(player.id)?.sort((a, b) => a.jornada - b.jornada),
             };
         });
         const roundMatches: RoundMatchItem[] = (matchResult.data ?? []).map((match) => ({
