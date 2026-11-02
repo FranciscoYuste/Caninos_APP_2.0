@@ -45,7 +45,7 @@ Public dashboard + admin panel for the futsal team "Bayern D.L.Caninos" (squad, 
 
 **3D pitch.** `player-field.tsx` loads `player-pitch-3d.tsx` (react-three-fiber/drei) via `next/dynamic` with `ssr: false`, with error/ready callbacks so the field can fall back when WebGL fails. Keep three.js imports out of server-rendered modules.
 
-**Landing.** `/` renders `intro-landing.tsx`, an intro video (`public/videos/introEdit.MP4`) with transparent hotspots positioned by percentage in `.intro-hotspot--enter` / `.intro-hotspot--admin` in `src/app/globals.css`.
+**Landing.** `/` renders the active competition (same as its standings page) with `src/components/intro-overlay.tsx` on top: a requestAnimationFrame timeline animates the crest out of the tunnel image, then grows it while an inverted crest-shaped `mask-image` (`mask-composite: exclude`) on the tunnel layer reveals the real page underneath; at the end it `history.replaceState`s to the competition path. It plays fully once per session (`sessionStorage`), short on repeat, and is a plain fade with `prefers-reduced-motion`. Assets live in `public/intro/`.
 
 ## Conventions
 
