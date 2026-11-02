@@ -158,6 +158,8 @@ export const getTeamData = cache(async (): Promise<TeamData | null> => {
             jornada: match.jornada,
             home: match.equipo_local,
             away: match.equipo_visitante,
+            homeGoals: match.goles_local,
+            awayGoals: match.goles_visitante,
             score: match.goles_local === null || match.goles_visitante === null
                 ? "PENDIENTE"
                 : `${match.goles_local} — ${match.goles_visitante}`,
@@ -180,6 +182,8 @@ export const getTeamData = cache(async (): Promise<TeamData | null> => {
                     key: match.id,
                     jornada: match.jornada,
                     date: `${dateText} · ${status === "done" ? "FINAL" : status === "pending" ? "PENDIENTE" : "PRÓXIMO"}`,
+                    startsAt: match.fecha,
+                    field: match.campo,
                     home: match.equipo_local,
                     away: match.equipo_visitante,
                     chronicle: match.cronica,

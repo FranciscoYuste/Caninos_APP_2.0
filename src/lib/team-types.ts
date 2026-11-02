@@ -17,7 +17,7 @@ export type Player = {
     video?: string | null;
     matchStats?: Array<{ label: string; goals: number; assists: number; penalties: string; doublePenalties: string; directFreeKicks: number; yellowCards: number; redCards: number }>;
 };
-export type MatchItem = { key: string; jornada: number; date: string; home: string; away: string; score: string; chronicle: string | null; finalScore?: string | null; status: string; callupPhotoUrl?: string | null; callups?: Array<{ name: string; calledUp: boolean }> };
-export type RoundMatchItem = { key: string; jornada: number; home: string; away: string; score: string };
+export type MatchItem = { key: string; jornada: number; date: string; startsAt: string | null; field: string | null; home: string; away: string; score: string; chronicle: string | null; finalScore?: string | null; status: string; callupPhotoUrl?: string | null; callups?: Array<{ name: string; calledUp: boolean }> };
+export type RoundMatchItem = { key: string; jornada: number; home: string; away: string; score: string; homeGoals: number | null; awayGoals: number | null };
 export type KatsuCard = { key: string; jornada: number; home: string; away: string; score: string | null; player: Pick<Player, "id" | "name" | "position" | "number" | "photo"> };
 export type Standing = { position: number; name: string; played: number; won: number; drawn: number; lost: number; goalsFor: number; goalsAgainst: number; goalDifference: number; points: number };

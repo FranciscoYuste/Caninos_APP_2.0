@@ -41,7 +41,7 @@ export function KatsuPlayerCard({ card }: { card: KatsuCard }) {
                         <span className="max-w-full truncate text-sm font-bold text-white/85 sm:text-sm">{card.home} <span className="text-white/50">vs</span> {card.away}</span>
                         <span className="font-mono text-xl font-black tracking-wide text-white sm:text-2xl">{card.score ?? "Resultado pendiente"}</span>
                     </span>
-                    <span className="relative mt-2 flex items-center justify-center gap-2 text-[9px] font-bold uppercase tracking-[0.14em] text-[var(--lime)] sm:text-[10px]"><span className="size-1.5 rounded-full bg-[var(--lime)]" /> Pulsa para descubrir</span>
+                    <span className="relative mt-2 flex items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--lime)] sm:text-[10px]"><span className="size-1.5 rounded-full bg-[var(--lime)]" /> Pulsa para descubrir</span>
                 </span>
                 <span className="katsu-card-face katsu-card-back absolute inset-0 flex flex-col overflow-hidden border border-[var(--lime)]/75 bg-[#171a15] shadow-[0_16px_50px_#0008] [backface-visibility:hidden] [transform:rotateY(180deg)]">
                     <span className="relative min-h-0 flex-1 overflow-hidden bg-[radial-gradient(ellipse_at_50%_30%,#55592c,#1a1d1a_74%)]">

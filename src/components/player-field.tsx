@@ -60,7 +60,7 @@ export function PlayerField({ playersByRole, roles, onSelect }: {
     return (
         <div className="player-field-shell mb-10 overflow-hidden border border-[var(--lime)]/40 bg-[#101710] p-3 sm:p-5">
             <div className="mb-4 flex flex-col items-center justify-between gap-3 sm:flex-row">
-                <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-white/55">Campo · Temporada {ACTIVE_SEASON}</p>
+                <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-white/55">Campo · Temporada {ACTIVE_SEASON}</p>
                 <div className="flex items-center gap-2" role="group" aria-label="Modo de visualización del campo">
                     <button
                         type="button"
@@ -108,7 +108,7 @@ export function PlayerField({ playersByRole, roles, onSelect }: {
                     <div className="relative grid h-full grid-cols-4 grid-rows-4">
                         {roles.slice(0, 5).map((role, index) => (
                             <div key={role.id} className={`z-[1] flex flex-col items-center justify-center px-1 py-2 ${PLACEMENTS[index]}`}>
-                                <p className="mb-1 bg-black/50 px-2 py-1 text-center text-[8px] font-bold uppercase tracking-[0.06em] text-white sm:text-[9px]">{role.label}</p>
+                                <p className="mb-1 bg-black/50 px-2 py-1 text-center text-[10px] font-bold uppercase tracking-[0.06em] text-white sm:text-[10px]">{role.label}</p>
                                 <div className={role.id === "defender" || role.id === "pivot" ? "mx-auto grid w-fit max-w-full grid-cols-4 justify-items-center" : "flex w-full max-w-[320px] flex-wrap justify-center"}>
                                     {(playersByRole.get(role.id) ?? []).map((player) => (
                                         <div key={player.id} className={role.id === "defender" || role.id === "pivot" ? "w-16 min-w-0" : "w-1/3 sm:w-1/4"}>
@@ -116,7 +116,7 @@ export function PlayerField({ playersByRole, roles, onSelect }: {
                                         </div>
                                     ))}
                                 </div>
-                                {playersByRole.get(role.id)?.length === 0 ? <span className="bg-black/35 px-2 py-1 text-center text-[8px] text-white/80">Sin asignar</span> : null}
+                                {playersByRole.get(role.id)?.length === 0 ? <span className="bg-black/35 px-2 py-1 text-center text-[10px] text-white/80">Sin asignar</span> : null}
                             </div>
                         ))}
                     </div>
@@ -125,15 +125,15 @@ export function PlayerField({ playersByRole, roles, onSelect }: {
 
             {playersByRole.get("unspecified")?.length ? (
                 <div className="mx-auto mt-3 flex max-w-[520px] flex-wrap justify-center gap-2 border border-dashed border-white/20 p-3">
-                    <p className="w-full text-center text-[9px] font-bold uppercase text-white/55">Posición por definir</p>
+                    <p className="w-full text-center text-[10px] font-bold uppercase text-white/55">Posición por definir</p>
                     {playersByRole.get("unspecified")?.map((player) => <div key={player.id} className="w-20"><PlayerMini player={player} onSelect={() => onSelect(player)} /></div>)}
                 </div>
             ) : null}
 
             {mode === "3d" && webGLAvailable === null
-                ? <p className="mt-3 text-center text-[9px] text-white/45">Iniciando campo 3D...</p>
+                ? <p className="mt-3 text-center text-[10px] text-white/45">Iniciando campo 3D...</p>
                 : mode === "3d"
-                    ? <p className="mt-3 text-center text-[9px] font-bold uppercase tracking-[0.12em] text-white/45">Arrastra para explorar · usa la rueda o pellizca para acercar</p>
+                    ? <p className="mt-3 text-center text-[10px] font-bold uppercase tracking-[0.12em] text-white/45">Arrastra para explorar · usa la rueda o pellizca para acercar</p>
                     : null}
         </div>
     );

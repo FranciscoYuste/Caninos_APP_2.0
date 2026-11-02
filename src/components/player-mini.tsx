@@ -18,7 +18,7 @@ export function PlayerMini({ player, onSelect }: { player: Player; onSelect: () 
                     : player.name.split(" ").map((part) => part[0]).join("")}
                 {player.injured ? <span className="absolute -right-1 -top-1 grid size-6 place-items-center rounded-full border-2 border-[#1c2920] bg-red-600 text-white" title="Jugador lesionado"><Cross size={13} strokeWidth={3} /></span> : null}
             </span>
-            <span className="max-w-full truncate text-[9px] font-semibold leading-tight text-white sm:text-[10px]">{player.name}</span>
+            <span className="max-w-full truncate text-[10px] font-semibold leading-tight text-white sm:text-[10px]">{player.name}</span>
         </button>
     );
 }

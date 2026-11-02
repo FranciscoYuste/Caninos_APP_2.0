@@ -1,18 +1,12 @@
 "use client";
 
-import { useEffect } from "react";
 import { X } from "lucide-react";
 import { ShareButton } from "@/components/team/share-button";
+import { useModalDialog } from "@/components/team/use-modal-dialog";
 import type { MatchItem } from "@/lib/team-types";
 
 export function ChronicleDialog({ match, onClose }: { match: MatchItem; onClose: () => void }) {
-    useEffect(() => {
-        const closeOnEscape = (event: KeyboardEvent) => {
-            if (event.key === "Escape") onClose();
-        };
-        document.addEventListener("keydown", closeOnEscape);
-        return () => document.removeEventListener("keydown", closeOnEscape);
-    }, [onClose]);
+    const dialogRef = useModalDialog<HTMLElement>(onClose);
 
     return (
         <div
@@ -22,6 +16,7 @@ export function ChronicleDialog({ match, onClose }: { match: MatchItem; onClose:
             }}
         >
             <section
+                ref={dialogRef}
                 role="dialog"
                 aria-modal="true"
                 aria-labelledby="match-chronicle-title"

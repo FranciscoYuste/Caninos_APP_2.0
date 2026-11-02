@@ -1,20 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { X } from "lucide-react";
 import { PlayerCard } from "@/components/team/player-card";
 import { ShareButton } from "@/components/team/share-button";
+import { useModalDialog } from "@/components/team/use-modal-dialog";
 import type { Player } from "@/lib/team-types";
 
 export function PlayerDialog({ player, onClose }: { player: Player; onClose: () => void }) {
     const [cardTilt, setCardTilt] = useState({ x: 0, y: 0 });
-    useEffect(() => {
-        const closeOnEscape = (event: KeyboardEvent) => {
-            if (event.key === "Escape") onClose();
-        };
-        document.addEventListener("keydown", closeOnEscape);
-        return () => document.removeEventListener("keydown", closeOnEscape);
-    }, [onClose]);
+    const dialogRef = useModalDialog<HTMLElement>(onClose);
 
     return (
         <div
@@ -24,6 +19,7 @@ export function PlayerDialog({ player, onClose }: { player: Player; onClose: () 
             }}
         >
             <section
+                ref={dialogRef}
                 role="dialog"
                 aria-modal="true"
                 aria-labelledby="selected-player-title"
@@ -55,7 +51,7 @@ export function PlayerDialog({ player, onClose }: { player: Player; onClose: () 
                 <div className="mt-3 flex justify-center">
                     <ShareButton path={`/equipo/jugador/${player.id}`} title={`Ficha de ${player.name}`} text={`🃏 Ficha de ${player.name}`} className="bg-black/70" />
                 </div>
-                <p className="mt-3 text-center text-[9px] font-bold uppercase tracking-[0.16em] text-white/50">Mueve el puntero sobre la carta · Esc para cerrar</p>
+                <p className="mt-3 text-center text-[10px] font-bold uppercase tracking-[0.16em] text-white/50">Mueve el puntero sobre la carta · Esc para cerrar</p>
             </section>
         </div>
     );

@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, CalendarPlus } from "lucide-react";
 import { CallupCard } from "@/components/team/callups-section";
+import { Countdown } from "@/components/team/countdown";
 import { KatsuPlayerCard } from "@/components/team/katsu-card";
 import { ShareButton } from "@/components/team/share-button";
 import { pageMetadata } from "@/lib/metadata";
@@ -47,12 +48,19 @@ export default async function MatchPage({ params }: MatchPageProps) {
                 <h2 className="mt-3 text-2xl font-black uppercase sm:text-3xl">{match.home} <span className="text-[var(--muted)]">vs</span> {match.away}</h2>
                 <p className={`mt-4 font-mono text-4xl font-black sm:text-5xl ${match.status === "next" ? "text-[var(--lime)]" : ""}`}>{match.score}</p>
                 <p className="mt-3 font-mono text-[10px] leading-5 tracking-[0.1em] text-[var(--muted)]">{match.date}</p>
+                {match.status === "next" && match.startsAt ? <Countdown startsAt={match.startsAt} className="mt-3 block font-mono text-xs font-bold uppercase text-[var(--lime)]" /> : null}
+                <div className="mt-5 flex flex-wrap justify-center gap-2">
                 <ShareButton
                     path={`/equipo/partido/${match.key}`}
                     title={`Jornada ${match.jornada}`}
                     text={match.finalScore ? `⚽ J${match.jornada}: ${match.home} ${match.finalScore} ${match.away}` : `⚽ J${match.jornada}: ${match.home} vs ${match.away}`}
-                    className="mt-5"
                 />
+                {match.status === "next" && match.startsAt ? (
+                    <a href={`/equipo/partido/${match.key}/calendario`} className="inline-flex min-h-10 items-center gap-2 border border-[var(--line)] px-3 py-2 text-[10px] font-bold uppercase tracking-[0.1em] text-[var(--muted)] transition hover:border-[var(--lime)] hover:text-white">
+                        <CalendarPlus size={14} /> Añadir al calendario
+                    </a>
+                ) : null}
+                </div>
             </div>
 
             {paragraphs.length ? (

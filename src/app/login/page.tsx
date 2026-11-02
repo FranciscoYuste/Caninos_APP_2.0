@@ -5,6 +5,22 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
+// Supabase devuelve los mensajes en inglés; se traducen los habituales por su código.
+const LOGIN_ERRORS: Record<string, string> = {
+    invalid_credentials: "Correo o contraseña incorrectos.",
+    email_not_confirmed: "Esta cuenta aún no ha confirmado su correo.",
+    user_banned: "Esta cuenta está bloqueada.",
+    over_request_rate_limit: "Demasiados intentos. Espera unos minutos y vuelve a probar.",
+    over_email_send_rate_limit: "Demasiados intentos. Espera unos minutos y vuelve a probar.",
+};
+
+function loginErrorMessage(error: { code?: string; status?: number }): string {
+    if (error.code && LOGIN_ERRORS[error.code]) return LOGIN_ERRORS[error.code];
+    if (error.status === 429) return LOGIN_ERRORS.over_request_rate_limit;
+    if (!error.status) return "No se pudo conectar. Revisa tu conexión a internet.";
+    return "No se pudo iniciar sesión. Inténtalo de nuevo.";
+}
+
 export default function LoginPage() {
     const router = useRouter();
     const [message, setMessage] = useState("");
@@ -20,7 +36,7 @@ export default function LoginPage() {
         const supabase = createSupabaseBrowserClient();
         const result = await supabase.auth.signInWithPassword({ email, password });
         setBusy(false);
-        if (result.error) { setMessage(result.error.message); return; }
+        if (result.error) { setMessage(loginErrorMessage(result.error)); return; }
         const requestedPath = new URLSearchParams(window.location.search).get("next");
         const destination = requestedPath?.startsWith("/") && !requestedPath.startsWith("//") && !requestedPath.includes("\\")
             ? requestedPath
@@ -30,7 +46,7 @@ export default function LoginPage() {
     }
 
     return <main className="grid min-h-screen place-items-center px-5 py-12"><div className="w-full max-w-md border border-[var(--line)] bg-[var(--panel)] p-7 sm:p-9"><Link href="/" className="text-xs font-bold uppercase tracking-[0.14em] text-[var(--lime)]">Bayern D.L.Caninos</Link><h1 className="mt-8 text-3xl font-black uppercase">Acceso administrador</h1><p className="mt-2 text-sm text-[var(--muted)]">Inicia sesión para actualizar jornadas, goles, estadísticas y clasificación. El contenido del equipo es público.</p>
-        <form onSubmit={submit} className="mt-7 space-y-4"><label className="block text-xs text-[var(--muted)]">Correo electrónico<input name="email" type="email" autoComplete="email" required className="mt-2 w-full border border-[var(--line)] bg-[var(--ink)] px-3 py-3 text-sm text-white outline-none focus:border-[var(--lime)]" /></label><label className="block text-xs text-[var(--muted)]">Contraseña<input name="password" type="password" autoComplete="current-password" required className="mt-2 w-full border border-[var(--line)] bg-[var(--ink)] px-3 py-3 text-sm text-white outline-none focus:border-[var(--lime)]" /></label>{message && <p role="status" className="text-sm text-[var(--lime)]">{message}</p>}<button disabled={busy} className="w-full bg-[var(--lime)] px-4 py-3 text-xs font-black uppercase text-[var(--ink)] disabled:opacity-60">{busy ? "Un momento..." : "Iniciar sesión"}</button></form>
+        <form onSubmit={submit} className="mt-7 space-y-4"><label className="block text-xs text-[var(--muted)]">Correo electrónico<input name="email" type="email" autoComplete="email" required className="mt-2 w-full border border-[var(--line)] bg-[var(--ink)] px-3 py-3 text-sm text-white outline-none focus:border-[var(--lime)]" /></label><label className="block text-xs text-[var(--muted)]">Contraseña<input name="password" type="password" autoComplete="current-password" required className="mt-2 w-full border border-[var(--line)] bg-[var(--ink)] px-3 py-3 text-sm text-white outline-none focus:border-[var(--lime)]" /></label>{message && <p role="status" className="text-sm text-red-300">{message}</p>}<button disabled={busy} className="w-full bg-[var(--lime)] px-4 py-3 text-xs font-black uppercase text-[var(--ink)] disabled:opacity-60">{busy ? "Un momento..." : "Iniciar sesión"}</button></form>
         <Link href="/equipo" className="mt-5 inline-block text-xs text-[var(--muted)] underline underline-offset-4">Volver al contenido público</Link>
     </div></main>;
 }
