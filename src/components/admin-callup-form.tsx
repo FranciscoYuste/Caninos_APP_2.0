@@ -1,52 +1,35 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Check } from "lucide-react";
 
 export type CallupFormMatch = {
     id: string;
-    jornada: number;
-    home: string;
-    away: string;
     date: string;
     time: string;
     field: string;
-    played: boolean;
     callups: Record<string, boolean> | null;
 };
 type CallupPlayer = { id: string; name: string; number: number | null };
 type SaveState = { busy: boolean; message: string; error: boolean };
 
-function initialSelection(match: CallupFormMatch | undefined, players: CallupPlayer[]): Record<string, boolean> {
-    return Object.fromEntries(players.map((player) => [player.id, match?.callups?.[player.id] ?? false]));
+function initialSelection(match: CallupFormMatch, players: CallupPlayer[]): Record<string, boolean> {
+    return Object.fromEntries(players.map((player) => [player.id, match.callups?.[player.id] ?? false]));
 }
 
-export function AdminCallupForm({ matches: initialMatches, players }: { matches: CallupFormMatch[]; players: CallupPlayer[] }) {
-    const [matches, setMatches] = useState(initialMatches);
-    // Por defecto, el primer partido sin resultado: normalmente el de esta semana.
-    const [matchId, setMatchId] = useState(() => (initialMatches.find((match) => !match.played) ?? initialMatches.at(-1))?.id ?? "");
-    const match = matches.find((item) => item.id === matchId);
-    const [date, setDate] = useState(match?.date ?? "");
-    const [time, setTime] = useState(match?.time ?? "");
-    const [field, setField] = useState(match?.field ?? "");
+// Convocatoria y horario de un partido. Guardar actualiza la web al momento.
+export function AdminCallupForm({ match, players }: { match: CallupFormMatch; players: CallupPlayer[] }) {
+    const router = useRouter();
+    const [date, setDate] = useState(match.date);
+    const [time, setTime] = useState(match.time);
+    const [field, setField] = useState(match.field);
     const [publishCallup, setPublishCallup] = useState(true);
     const [selection, setSelection] = useState(() => initialSelection(match, players));
     const [state, setState] = useState<SaveState>({ busy: false, message: "", error: false });
     const calledUpCount = Object.values(selection).filter(Boolean).length;
 
-    function selectMatch(id: string) {
-        const next = matches.find((item) => item.id === id);
-        setMatchId(id);
-        setDate(next?.date ?? "");
-        setTime(next?.time ?? "");
-        setField(next?.field ?? "");
-        setPublishCallup(true);
-        setSelection(initialSelection(next, players));
-        setState({ busy: false, message: "", error: false });
-    }
-
     async function save() {
-        if (!match) return;
         if (Boolean(date) !== Boolean(time)) {
             setState({ busy: false, message: "Indica fecha y hora juntas, o deja ambas vacías.", error: true });
             return;
@@ -69,9 +52,7 @@ export function AdminCallupForm({ matches: initialMatches, players }: { matches:
                 setState({ busy: false, message: result.error ?? "No se pudo guardar la convocatoria.", error: true });
                 return;
             }
-            setMatches((previous) => previous.map((item) => item.id === match.id
-                ? { ...item, date, time, field: field || item.field, callups: publishCallup ? { ...selection } : item.callups }
-                : item));
+            router.refresh();
             setState({
                 busy: false,
                 message: publishCallup ? `Convocatoria guardada · ${calledUpCount} convocados.` : "Horario guardado.",
@@ -82,27 +63,8 @@ export function AdminCallupForm({ matches: initialMatches, players }: { matches:
         }
     }
 
-    if (!matches.length || !match) {
-        return <p className="mt-4 border border-dashed border-[var(--line)] p-4 text-xs text-[var(--muted)]">No hay partidos del Bayern cargados.</p>;
-    }
-
     return (
-        <div className="mt-4 space-y-5">
-            <label className="block text-[10px] font-semibold uppercase tracking-wide">
-                Partido
-                <select
-                    value={matchId}
-                    onChange={(event) => selectMatch(event.target.value)}
-                    className="mt-2 w-full border border-[var(--line)] bg-[var(--ink)] px-3 py-3 text-sm normal-case tracking-normal text-white focus:border-[var(--lime)] focus:outline-none"
-                >
-                    {matches.map((item) => (
-                        <option key={item.id} value={item.id}>
-                            J{item.jornada} · {item.home} vs {item.away}{item.callups ? " · publicada" : ""}
-                        </option>
-                    ))}
-                </select>
-            </label>
-
+        <div className="space-y-5">
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-[1fr_1fr_2fr]">
                 <label className="block text-[10px] font-semibold uppercase tracking-wide">
                     Fecha
