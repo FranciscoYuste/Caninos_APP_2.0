@@ -76,7 +76,7 @@ export function StandingsSection({ table, results, roundMatches, emptyMessage, s
                                         Leer crónica
                                     </button>
                                 ) : null}
-                                <Link href={`/partido/${match.key}`} className="inline-flex min-h-10 items-center border border-[var(--line)] px-3 py-2 text-xs font-bold uppercase tracking-[0.08em] text-[var(--muted)] transition hover:border-[var(--lime)] hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--lime)]">
+                                <Link href={`/partido/${match.key}#partido`} className="inline-flex min-h-10 items-center border border-[var(--line)] px-3 py-2 text-xs font-bold uppercase tracking-[0.08em] text-[var(--muted)] transition hover:border-[var(--lime)] hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--lime)]">
                                     Ver partido
                                 </Link>
                                 </div>

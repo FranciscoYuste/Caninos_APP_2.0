@@ -30,7 +30,9 @@ export default async function MatchPage({ params }: MatchPageProps) {
 
     return (
         <CompetitionFrame competition={competition} activeSection="competition">
-        <section className="mx-auto max-w-3xl py-10">
+        {/* "#partido" en los enlaces lleva directamente aquí, sin tener que bajar desde la cabecera; el
+            margen deja la ficha justo debajo del menú de secciones, que queda fijo arriba. */}
+        <section id="partido" className="mx-auto max-w-3xl scroll-mt-[8.5rem] py-10 sm:scroll-mt-20 lg:scroll-mt-12">
             <Link href={competitionPath(competition)} className="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.1em] text-[var(--muted)] hover:text-white">
                 <ArrowLeft size={14} /> Todos los partidos
             </Link>
