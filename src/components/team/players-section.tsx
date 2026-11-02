@@ -26,7 +26,7 @@ function getRole(position: string) {
     return "unspecified";
 }
 
-export function PlayersSection({ squad, emptyMessage }: { squad: Player[]; emptyMessage: string }) {
+export function PlayersSection({ squad, emptyMessage, season }: { squad: Player[]; emptyMessage: string; season: string }) {
     const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
     const closePlayer = useCallback(() => setSelectedPlayer(null), []);
     const playersByRole = new Map(ROLES.map((role) => [role.id, squad.filter((player) => getRole(player.position) === role.id)]));
@@ -36,7 +36,7 @@ export function PlayersSection({ squad, emptyMessage }: { squad: Player[]; empty
         <section id="plantilla" className="py-10">
             <div className="mb-7 text-center"><p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--lime)]">El grupo</p><h2 className="mt-2 text-3xl font-black uppercase sm:text-4xl">Jugadores <span className="font-normal text-[var(--muted)]">/ {squad.length}</span></h2><p className="mt-3 text-sm text-[var(--muted)]">Elige el modo de campo que prefieras y selecciona un jugador para abrir su ficha y consultar sus estadísticas.</p></div>
             {squad.length ? (
-                <PlayerField playersByRole={playersByRole} roles={ROLES} onSelect={setSelectedPlayer} />
+                <PlayerField playersByRole={playersByRole} roles={ROLES} onSelect={setSelectedPlayer} season={season} />
             ) : <p className="border-y border-[var(--line)] py-6 text-sm text-[var(--muted)]">{emptyMessage}</p>}
         </section>
             {selectedPlayer ? <PlayerDialog player={selectedPlayer} onClose={closePlayer} /> : null}

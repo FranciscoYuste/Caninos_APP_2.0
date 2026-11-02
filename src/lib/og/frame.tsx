@@ -1,12 +1,12 @@
 import type { ReactNode } from "react";
-import { ACTIVE_SEASON, FEATURED_TEAM } from "@/lib/config";
+import { FEATURED_TEAM } from "@/lib/config";
 import { ESCUDO_DATA_URL } from "@/lib/og/escudo";
 
 // Piezas comunes de las imágenes de vista previa (next/og solo admite estilos en línea y flexbox).
 export const OG_SIZE = { width: 1200, height: 630 };
 export const OG_COLORS = { ink: "#111311", panel: "#1a1d1a", line: "#343934", lime: "#f2cf18", paper: "#f3f3ec", muted: "#a4aaa0" };
 
-export function OgFrame({ kicker, children }: { kicker: string; children: ReactNode }) {
+export function OgFrame({ kicker, season, children }: { kicker: string; season?: string; children: ReactNode }) {
     return (
         <div
             style={{
@@ -29,7 +29,7 @@ export function OgFrame({ kicker, children }: { kicker: string; children: ReactN
                         <span style={{ fontSize: 24, color: OG_COLORS.lime, letterSpacing: 4, textTransform: "uppercase" }}>{kicker}</span>
                     </div>
                 </div>
-                <span style={{ fontSize: 22, color: OG_COLORS.muted, letterSpacing: 3 }}>TEMPORADA {ACTIVE_SEASON}</span>
+                {season ? <span style={{ fontSize: 22, color: OG_COLORS.muted, letterSpacing: 3 }}>TEMPORADA {season}</span> : null}
             </div>
             <div style={{ display: "flex", flex: 1, marginTop: 32 }}>{children}</div>
         </div>

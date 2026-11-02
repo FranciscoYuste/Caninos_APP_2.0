@@ -3,7 +3,6 @@
 import Image from "next/image";
 import { useState } from "react";
 import { Star } from "lucide-react";
-import { ACTIVE_SEASON_LABEL } from "@/lib/config";
 import type { KatsuCard } from "@/lib/team-types";
 
 export function KatsuPlayerCard({ card }: { card: KatsuCard }) {
@@ -24,7 +23,7 @@ export function KatsuPlayerCard({ card }: { card: KatsuCard }) {
                     <span className="katsu-card-orbit katsu-card-orbit-inner pointer-events-none absolute -right-7 top-21 size-36 rounded-full border border-[var(--lime)]/20" />
                     <span className="pointer-events-none absolute -left-16 top-1/3 h-px w-[150%] rotate-[-28deg] bg-gradient-to-r from-transparent via-[var(--lime)]/20 to-transparent" />
                     <span className="relative flex items-center justify-between text-xs font-bold uppercase tracking-[0.14em] text-[var(--lime)] sm:text-xs sm:tracking-[0.2em]">
-                        <span>Temporada {ACTIVE_SEASON_LABEL}</span><Star size={21} fill="currentColor" />
+                        <span>Temporada {card.season.replace("-", "—")}</span><Star size={21} fill="currentColor" />
                     </span>
                     <span className="relative mt-2 flex justify-center">
                         <Image src="/fotos/escudo-256.png" alt="Escudo de Bayern D.L. Caninos" width={76} height={76} className="size-[4.5rem] object-contain drop-shadow-[0_0_12px_#f2cf1870] sm:size-20" />

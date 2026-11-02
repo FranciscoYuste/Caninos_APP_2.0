@@ -1,6 +1,6 @@
 import { ImageResponse } from "next/og";
 import { imageAsDataUrl, OG_COLORS, OG_SIZE, OgFrame } from "@/lib/og/frame";
-import { getTeamData } from "@/lib/team-data";
+import { findPlayerContext } from "@/lib/player-lookup";
 
 export const alt = "Ficha del jugador";
 export const size = OG_SIZE;
@@ -8,13 +8,14 @@ export const contentType = "image/png";
 
 export default async function PlayerOpenGraphImage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
-    const player = (await getTeamData())?.squad.find((item) => item.id === id);
+    const found = await findPlayerContext(id);
+    const player = found?.player;
     const photo = await imageAsDataUrl(player?.photo);
     const initials = player?.name.split(" ").map((part) => part[0]).join("").slice(0, 3) ?? "";
 
     return new ImageResponse(
         (
-            <OgFrame kicker="Ficha de jugador">
+            <OgFrame kicker="Ficha de jugador" season={found?.competition.season}>
                 {player ? (
                     <div style={{ display: "flex", flex: 1, alignItems: "center" }}>
                         <div style={{ display: "flex", width: 340, height: 420, alignItems: "center", justifyContent: "center", border: `4px solid ${OG_COLORS.lime}`, backgroundColor: OG_COLORS.panel, overflow: "hidden" }}>

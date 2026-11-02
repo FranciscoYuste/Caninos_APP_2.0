@@ -3,24 +3,15 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, CalendarPlus } from "lucide-react";
 import { CallupCard } from "@/components/team/callups-section";
+import { CompetitionFrame } from "@/components/team/competition-frame";
 import { Countdown } from "@/components/team/countdown";
 import { KatsuPlayerCard } from "@/components/team/katsu-card";
 import { ShareButton } from "@/components/team/share-button";
+import { competitionPath } from "@/lib/competition-paths";
+import { findMatchContext as findMatch } from "@/lib/match-lookup";
 import { pageMetadata } from "@/lib/metadata";
-import { getTeamData } from "@/lib/team-data";
 
 type MatchPageProps = { params: Promise<{ id: string }> };
-
-async function findMatch(id: string) {
-    const data = await getTeamData();
-    const match = data?.results.find((item) => item.key === id);
-    if (!data || !match) return null;
-    return {
-        match,
-        katsu: data.katsuCards.find((card) => card.key === id),
-        otherMatches: data.roundMatches.filter((item) => item.jornada === match.jornada && item.key !== match.key),
-    };
-}
 
 export async function generateMetadata({ params }: MatchPageProps): Promise<Metadata> {
     const found = await findMatch((await params).id);
@@ -28,35 +19,36 @@ export async function generateMetadata({ params }: MatchPageProps): Promise<Meta
     const { match } = found;
     const score = match.finalScore ?? "vs";
     const summary = match.chronicle?.replace(/\s+/g, " ").trim().slice(0, 160) || match.date;
-    return pageMetadata(`J${match.jornada} · ${match.home} ${score} ${match.away}`, summary, `/equipo/partido/${match.key}/opengraph-image`);
+    return pageMetadata(`J${match.jornada} · ${match.home} ${score} ${match.away}`, summary, `/partido/${match.key}/opengraph-image`);
 }
 
 export default async function MatchPage({ params }: MatchPageProps) {
     const found = await findMatch((await params).id);
     if (!found) notFound();
-    const { match, katsu, otherMatches } = found;
+    const { competition, match, katsu, otherMatches } = found;
     const paragraphs = match.chronicle?.split(/\n\s*\n/).filter((paragraph) => paragraph.trim()) ?? [];
 
     return (
+        <CompetitionFrame competition={competition} activeSection="competition">
         <section className="mx-auto max-w-3xl py-10">
-            <Link href="/equipo" className="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.1em] text-[var(--muted)] hover:text-white">
+            <Link href={competitionPath(competition)} className="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.1em] text-[var(--muted)] hover:text-white">
                 <ArrowLeft size={14} /> Todos los partidos
             </Link>
 
             <div className="mt-6 border border-[var(--line)] bg-[var(--panel)] p-5 text-center sm:p-8">
-                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--lime)]">Jornada {match.jornada}</p>
+                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--lime)]">{competition.name} · Jornada {match.jornada}</p>
                 <h2 className="mt-3 text-2xl font-black uppercase sm:text-3xl">{match.home} <span className="text-[var(--muted)]">vs</span> {match.away}</h2>
                 <p className={`mt-4 font-mono text-4xl font-black sm:text-5xl ${match.status === "next" ? "text-[var(--lime)]" : ""}`}>{match.score}</p>
                 <p className="mt-3 font-mono text-[10px] leading-5 tracking-[0.1em] text-[var(--muted)]">{match.date}</p>
                 {match.status === "next" && match.startsAt ? <Countdown startsAt={match.startsAt} className="mt-3 block font-mono text-xs font-bold uppercase text-[var(--lime)]" /> : null}
                 <div className="mt-5 flex flex-wrap justify-center gap-2">
                 <ShareButton
-                    path={`/equipo/partido/${match.key}`}
+                    path={`/partido/${match.key}`}
                     title={`Jornada ${match.jornada}`}
                     text={match.finalScore ? `⚽ J${match.jornada}: ${match.home} ${match.finalScore} ${match.away}` : `⚽ J${match.jornada}: ${match.home} vs ${match.away}`}
                 />
                 {match.status === "next" && match.startsAt ? (
-                    <a href={`/equipo/partido/${match.key}/calendario`} className="inline-flex min-h-10 items-center gap-2 border border-[var(--line)] px-3 py-2 text-[10px] font-bold uppercase tracking-[0.1em] text-[var(--muted)] transition hover:border-[var(--lime)] hover:text-white">
+                    <a href={`/partido/${match.key}/calendario`} className="inline-flex min-h-10 items-center gap-2 border border-[var(--line)] px-3 py-2 text-[10px] font-bold uppercase tracking-[0.1em] text-[var(--muted)] transition hover:border-[var(--lime)] hover:text-white">
                         <CalendarPlus size={14} /> Añadir al calendario
                     </a>
                 ) : null}
@@ -98,5 +90,6 @@ export default async function MatchPage({ params }: MatchPageProps) {
                 ) : <p className="text-xs text-[var(--muted)]">No hay otros partidos cargados para esta jornada.</p>}
             </div>
         </section>
+        </CompetitionFrame>
     );
 }

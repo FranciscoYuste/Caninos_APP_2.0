@@ -247,6 +247,8 @@ export function AdminImporter({ katsuMatches, katsuPlayers, injuryPlayers, chron
                 <div className="border-t border-[var(--line)] p-5 sm:p-7">
                 <p className="mt-2 text-sm leading-6 text-[var(--muted)]">Esta ficha se comparte entre todas las competiciones. Los cambios de dorsal y posición se reflejan en cada una.</p>
                 <p className="mt-2 text-xs leading-5 text-[var(--muted)]">Posiciones válidas: Portero, Cierre, Ala izquierda, Ala derecha, Pívot o Por definir. Dorsal: número del 0 al 99 o vacío. Guarda el archivo como CSV UTF-8.</p>
+                {/* Descarga de un CSV desde la API, no una página: debe ser un enlace normal. */}
+                {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
                 <a href="/api/admin/players" className="mt-4 inline-flex border border-[var(--lime)] px-4 py-3 text-xs font-bold uppercase text-[var(--lime)] hover:bg-[var(--lime)] hover:text-[var(--ink)]">Descargar plantilla de jugadores</a>
                 <form onSubmit={submitPlayers} className="mt-5">
                     <label htmlFor="archivo-jugadores" className="mb-2 block text-xs font-semibold">Plantilla de jugadores (CSV)</label>

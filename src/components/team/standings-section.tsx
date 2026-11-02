@@ -5,11 +5,11 @@ import { useCallback, useState } from "react";
 import { CalendarDays, Trophy } from "lucide-react";
 import { ChronicleDialog } from "@/components/team/chronicle-dialog";
 import { FormBadges } from "@/components/team/form-badges";
-import { ACTIVE_SEASON, FEATURED_TEAM } from "@/lib/config";
+import { FEATURED_TEAM } from "@/lib/config";
 import { recentForm } from "@/lib/team-form";
 import type { MatchItem, RoundMatchItem, Standing } from "@/lib/team-types";
 
-export function StandingsSection({ table, results, roundMatches, emptyMessage }: { table: Standing[]; results: MatchItem[]; roundMatches: RoundMatchItem[]; emptyMessage: string }) {
+export function StandingsSection({ table, results, roundMatches, emptyMessage, season, competitionName }: { table: Standing[]; results: MatchItem[]; roundMatches: RoundMatchItem[]; emptyMessage: string; season: string; competitionName: string }) {
     const [expandedJornada, setExpandedJornada] = useState<number | null>(null);
     const [selectedChronicle, setSelectedChronicle] = useState<MatchItem | null>(null);
     const closeChronicle = useCallback(() => setSelectedChronicle(null), []);
@@ -17,7 +17,7 @@ export function StandingsSection({ table, results, roundMatches, emptyMessage }:
     return (
         <>
         <section id="liga" className="py-10">
-            <div className="mb-8 flex flex-col items-center text-center"><p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--lime)]">Temporada {ACTIVE_SEASON} · Liga de invierno</p><h2 className="mt-2 text-3xl font-black uppercase sm:text-4xl">Clasificación</h2><Trophy className="mt-3 text-[var(--lime)]" /></div>
+            <div className="mb-8 flex flex-col items-center text-center"><p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--lime)]">Temporada {season} · {competitionName}</p><h2 className="mt-2 text-3xl font-black uppercase sm:text-4xl">Clasificación</h2><Trophy className="mt-3 text-[var(--lime)]" /></div>
             <table className="w-full table-fixed border-collapse text-left text-[10px] sm:text-xs">
                 <colgroup>
                     <col className="w-6 sm:w-12" />
@@ -76,7 +76,7 @@ export function StandingsSection({ table, results, roundMatches, emptyMessage }:
                                         Leer crónica
                                     </button>
                                 ) : null}
-                                <Link href={`/equipo/partido/${match.key}`} className="border border-[var(--line)] px-3 py-2 text-[10px] font-bold uppercase tracking-[0.1em] text-[var(--muted)] transition hover:border-[var(--lime)] hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--lime)]">
+                                <Link href={`/partido/${match.key}`} className="border border-[var(--line)] px-3 py-2 text-[10px] font-bold uppercase tracking-[0.1em] text-[var(--muted)] transition hover:border-[var(--lime)] hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--lime)]">
                                     Ver partido
                                 </Link>
                                 </div>

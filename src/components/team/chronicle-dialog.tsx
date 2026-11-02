@@ -37,7 +37,7 @@ export function ChronicleDialog({ match, onClose }: { match: MatchItem; onClose:
                 <p className="mt-3 border-b border-[var(--line)] pb-4 font-mono text-xs leading-5 text-[var(--muted)]">
                     {match.date}<span className="mx-2">·</span><span className="font-bold text-white">{match.score}</span>
                 </p>
-                <ShareButton path={`/equipo/partido/${match.key}`} title={`Crónica · Jornada ${match.jornada}`} text={`📰 Crónica J${match.jornada}: ${match.home} ${match.score} ${match.away}`} className="mt-4" />
+                <ShareButton path={`/partido/${match.key}`} title={`Crónica · Jornada ${match.jornada}`} text={`📰 Crónica J${match.jornada}: ${match.home} ${match.score} ${match.away}`} className="mt-4" />
                 <div className="mt-6 space-y-4 text-sm leading-7 text-white/85">
                     {match.chronicle?.split(/\n\s*\n/).filter((paragraph) => paragraph.trim()).map((paragraph, index) => (
                         <p key={index} className="whitespace-pre-wrap">{paragraph}</p>

@@ -49,7 +49,7 @@ export function PlayerDialog({ player, onClose }: { player: Player; onClose: () 
                     <PlayerCard player={player} index={0} featured />
                 </div>
                 <div className="mt-3 flex justify-center">
-                    <ShareButton path={`/equipo/jugador/${player.id}`} title={`Ficha de ${player.name}`} text={`🃏 Ficha de ${player.name}`} className="bg-black/70" />
+                    <ShareButton path={`/jugador/${player.id}`} title={`Ficha de ${player.name}`} text={`🃏 Ficha de ${player.name}`} className="bg-black/70" />
                 </div>
                 <p className="mt-3 text-center text-[10px] font-bold uppercase tracking-[0.16em] text-white/50">Mueve el puntero sobre la carta · Esc para cerrar</p>
             </section>

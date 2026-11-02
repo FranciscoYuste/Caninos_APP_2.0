@@ -1,6 +1,6 @@
 import { ImageResponse } from "next/og";
 import { OG_COLORS, OG_SIZE, OgFrame } from "@/lib/og/frame";
-import { getTeamData } from "@/lib/team-data";
+import { findMatchContext } from "@/lib/match-lookup";
 
 export const alt = "Resultado del partido";
 export const size = OG_SIZE;
@@ -12,11 +12,12 @@ function TeamName({ name }: { name: string }) {
 
 export default async function MatchOpenGraphImage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
-    const match = (await getTeamData())?.results.find((item) => item.key === id);
+    const found = await findMatchContext(id);
+    const match = found?.match;
 
     return new ImageResponse(
         (
-            <OgFrame kicker={match ? `Jornada ${match.jornada}` : "Partido"}>
+            <OgFrame kicker={found ? `${found.competition.name} · J${found.match.jornada}` : "Partido"} season={found?.competition.season}>
                 {match ? (
                     <div style={{ display: "flex", flex: 1, flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
                         <div style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>

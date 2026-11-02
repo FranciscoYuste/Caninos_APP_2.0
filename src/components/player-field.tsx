@@ -4,7 +4,6 @@ import dynamic from "next/dynamic";
 import { useCallback, useState } from "react";
 import { Box, Grid2X2 } from "lucide-react";
 import { PlayerMini } from "@/components/player-mini";
-import { ACTIVE_SEASON } from "@/lib/config";
 import type { Player } from "@/lib/team-types";
 
 type PlayerRole = { id: string; label: string };
@@ -26,10 +25,11 @@ const PLACEMENTS = [
     "col-start-1 col-span-4 row-start-4",
 ];
 
-export function PlayerField({ playersByRole, roles, onSelect }: {
+export function PlayerField({ playersByRole, roles, onSelect, season }: {
     playersByRole: Map<string, Player[]>;
     roles: PlayerRole[];
     onSelect: (player: Player) => void;
+    season: string;
 }) {
     const [mode, setMode] = useState<FieldMode>("3d");
     // Una vez montado, el 3D no se desmonta al cambiar a 2D: solo se oculta
@@ -60,7 +60,7 @@ export function PlayerField({ playersByRole, roles, onSelect }: {
     return (
         <div className="player-field-shell mb-10 overflow-hidden border border-[var(--lime)]/40 bg-[#101710] p-3 sm:p-5">
             <div className="mb-4 flex flex-col items-center justify-between gap-3 sm:flex-row">
-                <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-white/55">Campo · Temporada {ACTIVE_SEASON}</p>
+                <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-white/55">Campo · Temporada {season}</p>
                 <div className="flex items-center gap-2" role="group" aria-label="Modo de visualización del campo">
                     <button
                         type="button"

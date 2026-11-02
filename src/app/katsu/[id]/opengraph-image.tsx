@@ -1,7 +1,7 @@
 import { ImageResponse } from "next/og";
 import { ESCUDO_DATA_URL } from "@/lib/og/escudo";
 import { OG_COLORS, OG_SIZE, OgFrame } from "@/lib/og/frame";
-import { getTeamData } from "@/lib/team-data";
+import { findMatchContext } from "@/lib/match-lookup";
 
 export const alt = "Carta del Jugador KATSU boca abajo";
 export const size = OG_SIZE;
@@ -10,12 +10,13 @@ export const contentType = "image/png";
 // La carta se muestra boca abajo a propósito: el nombre solo se ve dentro de la web.
 export default async function KatsuOpenGraphImage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
-    const card = (await getTeamData())?.katsuCards.find((item) => item.key === id);
+    const found = await findMatchContext(id);
+    const card = found?.katsu;
     const jornada = String(card?.jornada ?? 0).padStart(2, "0");
 
     return new ImageResponse(
         (
-            <OgFrame kicker="Jugador KATSU">
+            <OgFrame kicker="Jugador KATSU" season={found?.competition.season}>
                 <div style={{ display: "flex", flex: 1, alignItems: "center", justifyContent: "space-between" }}>
                     <div style={{ display: "flex", flexDirection: "column", maxWidth: 620 }}>
                         <span style={{ fontSize: 76, fontWeight: 700, lineHeight: 1.05, textTransform: "uppercase" }}>¿Quién se lleva la carta?</span>

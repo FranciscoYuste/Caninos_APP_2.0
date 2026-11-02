@@ -1,15 +1,15 @@
 import { NextResponse } from "next/server";
 import { FEATURED_TEAM } from "@/lib/config";
 import { buildCalendarEvent } from "@/lib/ics";
-import { getTeamData } from "@/lib/team-data";
+import { findMatchContext } from "@/lib/match-lookup";
 
 // Descarga el partido como evento de calendario. Solo existe cuando la fecha y la hora están confirmadas.
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
-    const match = (await getTeamData())?.results.find((item) => item.key === id);
+    const match = (await findMatchContext(id))?.match;
     if (!match?.startsAt) return NextResponse.json({ error: "Este partido aún no tiene fecha y hora confirmadas." }, { status: 404 });
 
-    const url = new URL(`/equipo/partido/${match.key}`, request.url).toString();
+    const url = new URL(`/partido/${match.key}`, request.url).toString();
     const ics = buildCalendarEvent({
         uid: `${match.key}@caninos`,
         start: new Date(match.startsAt),

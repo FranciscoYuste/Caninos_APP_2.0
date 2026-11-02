@@ -3,9 +3,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowUpRight, CircleAlert, RotateCcw } from "lucide-react";
-import { ACTIVE_SEASON } from "@/lib/config";
 
-export function IntroLanding() {
+export function IntroLanding({ season }: { season: string }) {
     const [isMobile, setIsMobile] = useState(false);
     const [videoUnavailable, setVideoUnavailable] = useState(false);
     const [replayKey, setReplayKey] = useState(0);
@@ -34,7 +33,7 @@ export function IntroLanding() {
         <>
             <main className="intro-desktop" aria-label="Portada Bayern D.L.Caninos">
                 <div className="intro-desktop-content">
-                    <p className="intro-desktop-kicker">Bayern D.L.Caninos · Temporada {ACTIVE_SEASON.replace("-", "–")}</p>
+                    <p className="intro-desktop-kicker">Bayern D.L.Caninos · Temporada {season.replace("-", "–")}</p>
                     <h1>Un equipo.<br /><span>Dos rodillas sanas.</span></h1>
                     <p className="intro-desktop-description">Sigue al equipo, consulta la clasificación, los partidos y las estadísticas de la temporada.</p>
                     <div className="intro-desktop-actions">
