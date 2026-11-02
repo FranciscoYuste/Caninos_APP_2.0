@@ -27,6 +27,12 @@ body {
 
 /* En la capa base para que las clases de tamaño de Tailwind (text-xs…) puedan sobrescribirlo. */
 @layer base {
+    /* Reserva el hueco de la barra de desplazamiento: al terminar la intro (que bloquea el
+       desplazamiento) la web no se mueve y el escudo queda donde aterrizó. */
+    html {
+        scrollbar-gutter: stable;
+    }
+
     button,
     input {
         font: inherit;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { IntroCoin } from "@/components/intro-coin";
 
 const TUNNEL = "/intro/tunel.jpg";
@@ -10,14 +10,17 @@ const SEEN_KEY = "caninos-intro-vista";
 const VANISHING_Y = 0.559;
 
 // Tiempos en milisegundos. La versión corta se usa al volver a la portada en la misma visita.
-const FULL = { fadeIn: 500, launch: 300, arrive: 2000, hold: 180, flyThrough: 950 };
+const FULL = { fadeIn: 500, launch: 300, arrive: 2000, hold: 180, dock: 1400 };
 // Vueltas del escudo durante el lanzamiento (empiezan despacio, aceleran y frenan).
 const TURNS = 2;
-const SHORT = { fadeIn: 200, launch: 0, arrive: 0, hold: 150, flyThrough: 800 };
+const SHORT = { fadeIn: 200, launch: 0, arrive: 0, hold: 150, dock: 1000 };
+// Reparto del aterrizaje (proporción de "dock"): viaje, rebote y relevo por el escudo real.
+const TRAVEL_END = 0.78;
+const SETTLE_END = 0.92;
 
 const clamp = (value: number) => Math.min(1, Math.max(0, value));
 const easeOutCubic = (t: number) => 1 - (1 - t) ** 3;
-const easeInCubic = (t: number) => t ** 3;
+const easeInOutCubic = (t: number) => (t < 0.5 ? 4 * t ** 3 : 1 - (-2 * t + 2) ** 3 / 2);
 const easeInOutSine = (t: number) => -(Math.cos(Math.PI * t) - 1) / 2;
 
 function preload(src: string) {
@@ -26,9 +29,9 @@ function preload(src: string) {
     return image.decode().catch(() => undefined);
 }
 
-// Intro de la portada: el escudo sale del fondo del túnel girando, se detiene en el centro y sigue
-// hacia la cámara. Al acercarse, su silueta se convierte en un hueco (máscara) por el que aparece la
-// web real que hay debajo, hasta que el hueco supera la pantalla y la intro desaparece.
+// Intro de la portada: el escudo sale del fondo del túnel girando y se detiene en el centro. Después
+// el túnel se abre desde el centro (máscara difuminada) dejando ver la web real que hay debajo,
+// mientras el escudo vuela hasta el escudo de la cabecera y se posa encima; al llegar, se funde con él.
 export function IntroOverlay({ targetPath }: { targetPath: string }) {
     const [visible, setVisible] = useState(true);
     const rootRef = useRef<HTMLDivElement>(null);
@@ -49,7 +52,9 @@ export function IntroOverlay({ targetPath }: { targetPath: string }) {
         const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
         const times = seen ? SHORT : FULL;
         const flyStart = times.launch + times.arrive + times.hold;
-        const total = flyStart + times.flyThrough;
+        const total = flyStart + times.dock;
+        // Escudo de la cabecera donde aterriza la moneda; se oculta hasta el relevo final.
+        const target = document.querySelector<HTMLElement>("[data-intro-crest]");
         const previousOverflow = document.body.style.overflow;
         document.body.style.overflow = "hidden";
 
@@ -68,6 +73,7 @@ export function IntroOverlay({ targetPath }: { targetPath: string }) {
             coin = null;
             try { sessionStorage.setItem(SEEN_KEY, "1"); } catch { /* no pasa nada */ }
             document.body.style.overflow = previousOverflow;
+            if (target) target.style.opacity = "";
             // La portada muestra la competición en curso: se deja su dirección real en la barra.
             if (window.location.pathname === "/") window.history.replaceState(window.history.state, "", targetPath);
             setVisible(false);
@@ -78,12 +84,14 @@ export function IntroOverlay({ targetPath }: { targetPath: string }) {
             black.style.opacity = "0";
             return () => { document.body.style.overflow = previousOverflow; };
         }
+        if (target) target.style.opacity = "0";
 
         const render = (now: number) => {
             const t = now - start + offset;
             const vw = window.innerWidth, vh = window.innerHeight;
             const settled = Math.min(vw, vh) * 0.62;
-            const launchY = vh * VANISHING_Y, centerY = vh / 2, centerX = vw / 2;
+            const launchY = vh * VANISHING_Y, centerY = vh / 2;
+            let centerX = vw / 2;
 
             black.style.opacity = String(1 - clamp(t / times.fadeIn));
 
@@ -104,15 +112,34 @@ export function IntroOverlay({ targetPath }: { targetPath: string }) {
                 glow = 0.25 + 0.75 * p;
                 push = 0.06 * easeInOutSine(clamp(t / flyStart));
             } else {
-                // Vuelo hacia la cámara: el escudo crece sin límite y se vuelve transparente.
-                const q = easeInCubic(clamp((t - flyStart) / times.flyThrough));
-                size = settled * 1.04 * 30 ** q;
-                y = centerY;
-                spin = 0;
-                tilt = 0;
-                crestOpacity = 1 - clamp((q - 0.06) / 0.3);
-                glow = 1 - q;
-                push = 0.06 + 0.5 * q;
+                // Aterrizaje: el túnel se abre desde el centro y el escudo viaja, dando una última vuelta,
+                // hasta el escudo de la cabecera (medido en cada fotograma por si cambia el diseño).
+                const d = clamp((t - flyStart) / times.dock);
+                const travel = easeInOutCubic(clamp(d / TRAVEL_END));
+                const settle = clamp((d - TRAVEL_END) / (SETTLE_END - TRAVEL_END));
+                const handoff = clamp((d - SETTLE_END) / (1 - SETTLE_END));
+                const startSize = settled * 1.04;
+                const rect = target?.getBoundingClientRect();
+                const endSize = rect?.width || 0;
+                const endX = rect ? rect.left + rect.width / 2 : centerX;
+                const endY = rect ? rect.top + rect.height / 2 : centerY;
+                // Encoge de forma geométrica (como si se alejara) y con un leve arco hacia arriba.
+                size = endSize ? startSize * (endSize / startSize) ** travel : startSize * (1 - travel);
+                size *= 1 + 0.12 * Math.sin(Math.PI * settle);
+                centerX += (endX - centerX) * travel;
+                y = centerY + (endY - centerY) * travel - Math.sin(Math.PI * travel) * vh * 0.05;
+                spin = -360 * travel;
+                tilt = 0.25 * Math.sin(Math.PI * travel);
+                crestOpacity = 1 - handoff;
+                const reveal = easeInOutSine(clamp(d / 0.6));
+                glow = 1 - reveal;
+                push = 0.06 + 0.12 * reveal;
+                // Hueco circular difuminado que crece desde el centro hasta descubrir toda la web.
+                const feather = Math.hypot(vw, vh) * 0.25;
+                const radius = -feather + reveal * (Math.hypot(vw, vh) / 2 + feather);
+                const mask = `radial-gradient(circle at 50% 50%, transparent ${radius}px, #000 ${radius + feather}px)`;
+                Object.assign(scene.style, { maskImage: mask, webkitMaskImage: mask });
+                if (target) target.style.opacity = String(handoff);
             }
 
             if (coin) {
@@ -128,20 +155,6 @@ export function IntroOverlay({ targetPath }: { targetPath: string }) {
             halo.style.transform = `translate(${centerX - haloSize / 2}px, ${y - haloSize / 2}px)`;
             halo.style.opacity = String(crestOpacity * glow * 0.85);
             tunnel.style.transform = `scale(${1 + push})`;
-
-            // Hueco con la forma del escudo en la capa del túnel, solo durante el vuelo final
-            // (antes, mientras gira, se vería la web por detrás del escudo de canto).
-            if (t >= flyStart) {
-                const holeSize = size * 0.97;
-                const position = `${centerX - holeSize / 2}px ${y - holeSize / 2}px, 0 0`;
-                const sizes = `${holeSize}px ${holeSize}px, 100% 100%`;
-                Object.assign(scene.style, { maskPosition: position, maskSize: sizes, webkitMaskPosition: position, webkitMaskSize: sizes });
-                if (!scene.dataset.masked) {
-                    scene.dataset.masked = "1";
-                    const images = `url(${CREST}), linear-gradient(#000 0 0)`;
-                    Object.assign(scene.style, { maskImage: images, webkitMaskImage: images, maskRepeat: "no-repeat", webkitMaskRepeat: "no-repeat", maskComposite: "exclude", webkitMaskComposite: "xor" } as Partial<CSSStyleDeclaration>);
-                }
-            }
 
             if (t >= total) finish();
             else frame = requestAnimationFrame(render);
@@ -179,6 +192,7 @@ export function IntroOverlay({ targetPath }: { targetPath: string }) {
 
         return () => {
             cancelled = true;
+            if (target) target.style.opacity = "";
             cancelAnimationFrame(frame);
             coin?.dispose();
             coin = null;
@@ -195,8 +209,8 @@ export function IntroOverlay({ targetPath }: { targetPath: string }) {
             onPointerDown={() => skipRef.current()}
             aria-hidden="true"
         >
-            {/* Escena del túnel: es la capa que recibe el hueco con forma de escudo. El escudo va fuera
-                de ella para poder desvanecerse en lugar de quedar recortado por su propio hueco. */}
+            {/* Escena del túnel: es la capa que se abre (máscara) para descubrir la web. El escudo va fuera
+                de ella para que el hueco no lo recorte. */}
             <div ref={sceneRef} className="absolute inset-0 bg-black">
                 <div ref={tunnelRef} className="absolute inset-0 will-change-transform" style={{ transformOrigin: `50% ${VANISHING_Y * 100}%` }}>
                     {/* En pantallas anchas, los laterales se rellenan con el mismo túnel desenfocado. */}

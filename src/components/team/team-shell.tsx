@@ -75,7 +75,7 @@ export function TeamShell({ competition, competitions, seasons, teamPosition, ne
                         </div>
                     </div>
                     <div className="flex shrink-0 flex-col items-center gap-2 sm:flex-row sm:gap-6">
-                        <Image src="/fotos/escudo-256.png" alt="Escudo de Bayern D.L. Caninos" width={104} height={104} priority className="size-14 object-contain drop-shadow-lg sm:size-24" />
+                        <Image src="/fotos/escudo-256.png" alt="Escudo de Bayern D.L. Caninos" width={104} height={104} priority data-intro-crest className="size-14 object-contain drop-shadow-lg sm:size-24" />
                         <div className="text-center sm:border-l sm:border-white/25 sm:pl-6 sm:text-right">
                             <p className="font-mono text-2xl font-bold sm:text-5xl">{!pending && teamPosition ? <>{teamPosition}<sup className="ml-0.5 text-[0.48em] text-[var(--lime)]">º</sup></> : "—"}</p>
                             <p className="mt-1 max-w-20 text-[10px] uppercase leading-tight tracking-[0.06em] text-white/65 sm:max-w-none sm:tracking-[0.15em]">{pending ? "clasificación pendiente" : "en la tabla"}</p>

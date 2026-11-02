@@ -100,12 +100,13 @@ Una competición con partidos no se puede borrar ni cambiar de temporada, tipo o
 
 ## Animación de entrada
 
-La portada `/` muestra la competición en curso con una animación encima, igual en móvil y ordenador: el escudo sale del fondo del túnel girando como una moneda 3D, llega al centro y sigue hacia la cámara; al acercarse, su silueta se abre como una ventana por la que aparece la web real, hasta llenar la pantalla. Después la barra de direcciones pasa a la dirección de la competición (por ejemplo `/2026-2027/liga-invierno`).
+La portada `/` muestra la competición en curso con una animación encima, igual en móvil y ordenador: el escudo sale del fondo del túnel girando como una moneda 3D, llega al centro y, mientras el túnel se abre desde el centro dejando ver la web real, vuela dando una última vuelta hasta posarse sobre el escudo de la cabecera, que toma el relevo. Después la barra de direcciones pasa a la dirección de la competición (por ejemplo `/2026-2027/liga-invierno`).
 
 - Está en `src/components/intro-overlay.tsx`; los tiempos se ajustan en las constantes `FULL` y `SHORT`.
+- El escudo de destino es la imagen marcada con `data-intro-crest` en `src/components/team/team-shell.tsx`; su posición se mide durante la animación, así que encaja en cualquier pantalla.
 - El escudo es una moneda 3D (three.js, `src/components/intro-coin.ts`) con canto dorado metálico y reverso oscuro; el número de vueltas se ajusta en `TURNS`. Si el dispositivo no tiene WebGL, se usa automáticamente un escudo 2D equivalente.
 - Recursos: `public/intro/tunel.jpg` (fotograma del vídeo original sin el escudo) y `public/intro/escudo.webp`.
-- Se reproduce completa una vez por visita; si se vuelve a la portada en la misma visita, solo se ve el vuelo final. Tocar la pantalla salta directamente al vuelo final.
+- Se reproduce completa una vez por visita; si se vuelve a la portada en la misma visita, solo se ve el aterrizaje. Tocar la pantalla salta directamente al aterrizaje.
 - Con el ajuste de «reducir movimiento» del dispositivo se sustituye por un fundido.
 - El icono de la web guardada en el móvil abre la portada, así que también muestra la animación.
 

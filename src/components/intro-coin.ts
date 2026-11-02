@@ -88,9 +88,11 @@ export async function createIntroCoin(canvas: HTMLCanvasElement, crestUrl: strin
             // Distancia a la que el diámetro de la moneda ocupa "size" píxeles en pantalla.
             const distance = (RADIUS * vh) / (size * tanHalf);
             const unitsPerPixel = (2 * distance * tanHalf) / vh;
-            pivot.position.set((centerX - vw / 2) * unitsPerPixel, -(centerY - vh / 2) * unitsPerPixel, CAMERA_Z - distance);
+            const x = (centerX - vw / 2) * unitsPerPixel, y = -(centerY - vh / 2) * unitsPerPixel;
+            pivot.position.set(x, y, CAMERA_Z - distance);
             // Con giro 0 la cámara ve la tapa superior del cilindro (el anverso), de ahí la media vuelta.
-            pivot.rotation.set(tilt, ((spin + 180) * Math.PI) / 180, 0);
+            // Fuera del centro se orienta hacia la cámara para que de frente coincida con el escudo plano.
+            pivot.rotation.set(tilt + Math.atan2(y, distance), ((spin + 180) * Math.PI) / 180 + Math.atan2(-x, distance), 0);
             edge.opacity = front.opacity = rear.opacity = opacity;
             // De frente, color real; de canto, más oscuro, como si la luz dejara de darle de lleno.
             const facing = Math.abs(Math.cos((spin * Math.PI) / 180)) * Math.cos(tilt);
