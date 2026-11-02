@@ -5,7 +5,7 @@ import { Canvas, useLoader } from "@react-three/fiber";
 import { Html, OrbitControls } from "@react-three/drei";
 import Image from "next/image";
 import { BackSide, DoubleSide, SRGBColorSpace, TextureLoader } from "three";
-import type { Player } from "@/components/team-dashboard";
+import type { Player } from "@/lib/team-types";
 
 type PlayerRole = { id: string; label: string };
 type PlayerPitch3DProps = {

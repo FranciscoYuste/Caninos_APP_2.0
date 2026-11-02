@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { Cross } from "lucide-react";
-import type { Player } from "@/components/team-dashboard";
+import type { Player } from "@/lib/team-types";
 
 export function PlayerMini({ player, onSelect }: { player: Player; onSelect: () => void }) {
     return (

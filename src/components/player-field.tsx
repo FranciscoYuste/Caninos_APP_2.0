@@ -5,7 +5,7 @@ import { useCallback, useState } from "react";
 import { Box, Grid2X2 } from "lucide-react";
 import { PlayerMini } from "@/components/player-mini";
 import { ACTIVE_SEASON } from "@/lib/config";
-import type { Player } from "@/components/team-dashboard";
+import type { Player } from "@/lib/team-types";
 
 type PlayerRole = { id: string; label: string };
 type FieldMode = "2d" | "3d";
