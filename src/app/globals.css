@@ -72,7 +72,13 @@ body {
 
 .player-pitch-3d canvas {
     display: block;
-    touch-action: none;
+}
+
+/* OrbitControls pone touch-action: none en línea en el contenedor del canvas, lo que impide bajar
+   por la página tocando el campo. Con pan-y, deslizar arriba o abajo mueve la página y deslizar a
+   los lados gira el campo; el pellizco para acercar sigue funcionando. */
+.player-pitch-3d :where(div, canvas) {
+    touch-action: pan-y !important;
 }
 
 .player-field-status {
