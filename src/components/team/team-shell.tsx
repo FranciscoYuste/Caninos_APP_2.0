@@ -140,7 +140,7 @@ export function TeamShell({ competition, competitions, seasons, teamPosition, ne
                     </section>
                 )}
             </div>
-            <footer className="flex flex-nowrap items-center justify-between gap-3 border-t border-[var(--line)] px-4 py-5 text-[10px] uppercase leading-snug tracking-[0.01em] text-[var(--muted)] sm:px-10 sm:py-6 sm:tracking-[0.12em]"><span className="min-w-0">Bayern D.L.Caninos. Creado para fumar en equipo.</span><span className="flex shrink-0 items-center gap-1 whitespace-nowrap sm:gap-3"><Image src="/fotos/corona-96.png" alt="" aria-hidden="true" width={42} height={42} className="footer-emblem-glow size-6 object-contain sm:size-9" /><span className="flex items-center gap-1 sm:gap-2"><Shield size={12} className="hidden sm:block" /><span className="hidden sm:inline">Temporada </span>{competition.season}</span></span></footer>
+            <footer className="flex flex-nowrap items-center justify-between gap-3 border-t border-[var(--line)] px-4 py-5 text-[10px] uppercase leading-snug tracking-[0.01em] text-[var(--muted)] sm:px-10 sm:py-6 sm:tracking-[0.12em]"><span className="min-w-0">Bayern D.L.Caninos. Creado para fumar en equipo.</span><span className="flex shrink-0 items-center gap-1 whitespace-nowrap sm:gap-3"><Image src="/fotos/corona-96.png" alt="" aria-hidden="true" width={42} height={42} className="footer-emblem-glow size-6 object-contain sm:size-9" /><span className="flex items-center gap-1 sm:gap-2"><Shield size={12} />Temporada {competition.season}</span></span></footer>
         </main>
     );
 }

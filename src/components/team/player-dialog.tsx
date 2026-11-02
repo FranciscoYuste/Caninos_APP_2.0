@@ -51,7 +51,9 @@ export function PlayerDialog({ player, onClose }: { player: Player; onClose: () 
                 <div className="mt-3 flex justify-center">
                     <ShareButton path={`/jugador/${player.id}`} title={`Ficha de ${player.name}`} text={`🃏 Ficha de ${player.name}`} className="bg-black/70" />
                 </div>
-                <p className="mt-3 text-center text-[10px] font-bold uppercase tracking-[0.16em] text-white/50">Mueve el puntero sobre la carta · Esc para cerrar</p>
+                {/* Indicación según el dispositivo: con ratón la carta se inclina; en el móvil se cierra tocando fuera. */}
+                <p className="mt-3 hidden text-center text-[10px] font-bold uppercase tracking-[0.16em] text-white/50 [@media(hover:hover)]:block">Mueve el puntero sobre la carta · Esc para cerrar</p>
+                <p className="mt-3 text-center text-[10px] font-bold uppercase tracking-[0.16em] text-white/50 [@media(hover:hover)]:hidden">Toca fuera de la carta o la X para cerrar</p>
             </section>
         </div>
     );

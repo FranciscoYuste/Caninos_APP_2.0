@@ -8,12 +8,13 @@ const STYLES: Record<FormResult, string> = {
 const LABELS: Record<FormResult, string> = { V: "victoria", E: "empate", D: "derrota" };
 
 // Racha reciente: un cuadrado por partido, del más antiguo (izquierda) al más reciente.
-export function FormBadges({ form, className = "" }: { form: FormResult[]; className?: string }) {
+// "sm" es la variante compacta que va bajo el nombre del equipo en la tabla del móvil.
+export function FormBadges({ form, size = "md", className = "" }: { form: FormResult[]; size?: "sm" | "md"; className?: string }) {
     if (!form.length) return null;
     return (
-        <span className={`inline-flex gap-1 ${className}`} role="img" aria-label={`Últimos resultados: ${form.map((result) => LABELS[result]).join(", ")}`}>
+        <span className={`flex gap-1 ${size === "sm" ? "gap-0.5" : ""} ${className}`} role="img" aria-label={`Últimos resultados: ${form.map((result) => LABELS[result]).join(", ")}`}>
             {form.map((result, index) => (
-                <span key={index} aria-hidden="true" className={`grid size-[18px] place-items-center text-[10px] font-black leading-none ${STYLES[result]}`}>{result}</span>
+                <span key={index} aria-hidden="true" className={`grid place-items-center font-black leading-none ${size === "sm" ? "size-4 text-[10px]" : "size-[18px] text-[10px]"} ${STYLES[result]}`}>{result}</span>
             ))}
         </span>
     );

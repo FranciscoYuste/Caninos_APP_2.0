@@ -40,7 +40,7 @@ export function StandingsSection({ table, results, roundMatches, emptyMessage, s
                 <tbody>{table.length ? table.map((team) => (
                     <tr key={team.name} className={`border-b border-[var(--line)] ${team.name === FEATURED_TEAM ? "bg-[#f2cf1810] text-[var(--lime)]" : ""}`}>
                         <td className="py-4 pl-1 font-mono sm:pl-2">{String(team.position).padStart(2, "0")}</td>
-                        <td className="overflow-hidden px-1 font-semibold"><span className="block truncate">{team.name}</span></td>
+                        <td className="overflow-hidden px-1 py-2 font-semibold"><span className="block truncate">{team.name}</span><FormBadges form={recentForm(roundMatches, team.name)} size="sm" className="mt-1 sm:hidden" /></td>
                         <td className="text-center font-mono">{team.played}</td><td className="text-center font-mono">{team.won}</td><td className="text-center font-mono">{team.drawn}</td><td className="text-center font-mono">{team.lost}</td>
                         <td className="text-center font-mono">{team.goalsFor}</td><td className="text-center font-mono">{team.goalsAgainst}</td><td className="text-center font-mono">{team.goalDifference > 0 ? "+" : ""}{team.goalDifference}</td><td className="pr-1 text-right font-mono font-bold sm:pr-2">{team.points}</td>
                         <td className="hidden pl-4 sm:table-cell"><FormBadges form={recentForm(roundMatches, team.name)} /></td>
@@ -61,7 +61,7 @@ export function StandingsSection({ table, results, roundMatches, emptyMessage, s
                                     aria-expanded={isExpanded}
                                     aria-controls={`jornada-${match.jornada}`}
                                     onClick={() => setExpandedJornada(isExpanded ? null : match.jornada)}
-                                    className="mb-2 text-[10px] font-bold uppercase tracking-[0.1em] text-[var(--lime)] underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--lime)]"
+                                    className="mb-2 py-1 text-left text-xs font-bold uppercase tracking-[0.08em] text-[var(--lime)] underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--lime)]"
                                 >
                                     Jornada {match.jornada} · {isExpanded ? "Ocultar otros partidos" : "Ver otros partidos"}
                                 </button>
@@ -71,12 +71,12 @@ export function StandingsSection({ table, results, roundMatches, emptyMessage, s
                                     <button
                                         type="button"
                                         onClick={() => setSelectedChronicle(match)}
-                                        className="border border-[var(--lime)]/50 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.1em] text-[var(--lime)] transition hover:bg-[var(--lime)] hover:text-[var(--ink)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--lime)]"
+                                        className="min-h-10 border border-[var(--lime)]/50 px-3 py-2 text-xs font-bold uppercase tracking-[0.08em] text-[var(--lime)] transition hover:bg-[var(--lime)] hover:text-[var(--ink)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--lime)]"
                                     >
                                         Leer crónica
                                     </button>
                                 ) : null}
-                                <Link href={`/partido/${match.key}`} className="border border-[var(--line)] px-3 py-2 text-[10px] font-bold uppercase tracking-[0.1em] text-[var(--muted)] transition hover:border-[var(--lime)] hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--lime)]">
+                                <Link href={`/partido/${match.key}`} className="inline-flex min-h-10 items-center border border-[var(--line)] px-3 py-2 text-xs font-bold uppercase tracking-[0.08em] text-[var(--muted)] transition hover:border-[var(--lime)] hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--lime)]">
                                     Ver partido
                                 </Link>
                                 </div>
