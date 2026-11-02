@@ -133,7 +133,7 @@ export function PlayerField({ playersByRole, roles, onSelect, season }: {
             {mode === "3d" && webGLAvailable === null
                 ? <p className="mt-3 text-center text-[10px] text-white/45">Iniciando campo 3D...</p>
                 : mode === "3d"
-                    ? <p className="mt-3 text-center text-[10px] font-bold uppercase tracking-[0.12em] text-white/45">Arrastra para explorar · usa la rueda o pellizca para acercar</p>
+                    ? <p className="mt-3 text-center text-[10px] font-bold uppercase tracking-[0.12em] text-white/45">Desliza a los lados para girar · pellizca para acercar · «Centrar» vuelve al inicio</p>
                     : null}
         </div>
     );

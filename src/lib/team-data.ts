@@ -8,6 +8,7 @@ type PlayerRecord = {
 };
 
 type PlayerStatsRecord = {
+    partido_id: string;
     jugador_id: string;
     goles: number;
     asistencias: number;
@@ -27,7 +28,7 @@ type PlayerStatsRecord = {
     } | null;
 };
 
-type PlayerSeasonTotals = Omit<PlayerStatsRecord, "partidos">;
+type PlayerSeasonTotals = Omit<PlayerStatsRecord, "partidos" | "partido_id">;
 
 type CallupRecord = {
     partido_id: string;
@@ -54,7 +55,7 @@ export const getTeamData = cache(async (season: string, phase: string, group: st
             supabase.from("partidos").select("id,jornada,fecha,fecha_prevista,campo,equipo_local,equipo_visitante,goles_local,goles_visitante,estado,foto_convocatoria_url,jugador_katsu_id,cronica").eq("temporada", temporada).eq("fase", phase).eq("grupo", group).order("fecha_prevista"),
             supabase.from("clasificacion").select("equipo,posicion,jugados,ganados,empatados,perdidos,goles_favor,goles_contra,diferencia,puntos").eq("temporada", temporada).eq("fase", phase).eq("grupo", group).order("posicion"),
             supabase.from("convocatorias").select("partido_id,jugador_id,convocado,partidos!inner(temporada,fase,grupo)").eq("partidos.temporada", temporada).eq("partidos.fase", phase).eq("partidos.grupo", group),
-            supabase.from("estadisticas").select("jugador_id,goles,asistencias,penaltis_marcados,penaltis_tirados,dobles_penaltis_marcados,dobles_penaltis_tirados,faltas_directas_marcadas,amarillas,rojas,partidos!inner(jornada,fecha,fecha_prevista,equipo_local,equipo_visitante,temporada,fase,grupo)").eq("partidos.temporada", temporada).eq("partidos.fase", phase).eq("partidos.grupo", group),
+            supabase.from("estadisticas").select("partido_id,jugador_id,goles,asistencias,penaltis_marcados,penaltis_tirados,dobles_penaltis_marcados,dobles_penaltis_tirados,faltas_directas_marcadas,amarillas,rojas,partidos!inner(jornada,fecha,fecha_prevista,equipo_local,equipo_visitante,temporada,fase,grupo)").eq("partidos.temporada", temporada).eq("partidos.fase", phase).eq("partidos.grupo", group),
         ]);
         const queryErrors = [
             { table: "jugadores", error: playerResult.error },
@@ -78,7 +79,14 @@ export const getTeamData = cache(async (season: string, phase: string, group: st
 
         const seasonStats = new Map<string, PlayerSeasonTotals>();
         const matchStats = new Map<string, Player["matchStats"]>();
+        // Lo que hizo cada jugador en cada partido, para la carta KATSU.
+        const matchLines = new Map<string, NonNullable<KatsuCard["line"]>>();
         for (const record of (statsResult.data ?? []) as unknown as PlayerStatsRecord[]) {
+            matchLines.set(`${record.partido_id}:${record.jugador_id}`, {
+                goals: record.goles,
+                assists: record.asistencias,
+                penalties: record.penaltis_marcados + record.dobles_penaltis_marcados,
+            });
             const total = seasonStats.get(record.jugador_id) ?? {
                 jugador_id: record.jugador_id,
                 goles: 0,
@@ -111,6 +119,7 @@ export const getTeamData = cache(async (season: string, phase: string, group: st
                         : "";
                 const detail = matchStats.get(record.jugador_id) ?? [];
                 detail.push({
+                    jornada: fixture.jornada,
                     label: `J${fixture.jornada}${date ? ` · ${date}` : ""} vs ${opponent}`,
                     goals: record.goles,
                     assists: record.asistencias,
@@ -130,6 +139,11 @@ export const getTeamData = cache(async (season: string, phase: string, group: st
             const players = matchCallups.get(callup.partido_id) ?? new Set<string>();
             if (callup.convocado) players.add(callup.jugador_id);
             matchCallups.set(callup.partido_id, players);
+        }
+        // Jornadas en las que cada jugador fue KATSU, para su carta.
+        const katsuRounds = new Map<string, number[]>();
+        for (const match of (matchResult.data ?? []).filter(isFeaturedMatch)) {
+            if (match.jugador_katsu_id) katsuRounds.set(match.jugador_katsu_id, [...(katsuRounds.get(match.jugador_katsu_id) ?? []), match.jornada]);
         }
         // Plantilla: jugadores activos y, en temporadas pasadas, también quienes ya no están pero jugaron esta competición.
         const squad: Player[] = ((playerResult.data ?? []) as unknown as PlayerRecord[])
@@ -153,7 +167,8 @@ export const getTeamData = cache(async (season: string, phase: string, group: st
                 directFreeKicks: totals?.faltas_directas_marcadas ?? 0,
                 injured: player.lesionado,
                 injuryDescription: player.descripcion_lesion,
-                matchStats: matchStats.get(player.id),
+                katsuRounds: (katsuRounds.get(player.id) ?? []).sort((a, b) => a - b),
+                matchStats: matchStats.get(player.id)?.sort((a, b) => a.jornada - b.jornada),
             };
         });
         const roundMatches: RoundMatchItem[] = (matchResult.data ?? []).map((match) => ({
@@ -217,6 +232,7 @@ export const getTeamData = cache(async (season: string, phase: string, group: st
                         ? null
                         : `${match.goles_local} — ${match.goles_visitante}`,
                     player,
+                    line: matchLines.get(`${match.id}:${player.id}`),
                 }];
             });
         const table: Standing[] = (tableResult.data ?? []).map((team) => ({

@@ -1,10 +1,12 @@
 "use client";
 
 import { Component, Suspense, memo, useCallback, useEffect, useRef, useState, type ReactNode } from "react";
-import { Canvas, useLoader } from "@react-three/fiber";
+import { Canvas, useFrame, useLoader, useThree } from "@react-three/fiber";
 import { Html, OrbitControls } from "@react-three/drei";
 import Image from "next/image";
-import { BackSide, DoubleSide, SRGBColorSpace, TextureLoader } from "three";
+import { RotateCcw } from "lucide-react";
+import { BackSide, DoubleSide, SRGBColorSpace, TextureLoader, Vector3 } from "three";
+import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import type { Player } from "@/lib/team-types";
 
 type PlayerRole = { id: string; label: string };
@@ -18,6 +20,10 @@ type PlayerPitch3DProps = {
 };
 
 type Slot = [number, number, number];
+
+const HOME_POSITION: Slot = [0, 8.5, 15.5];
+const HOME = new Vector3(...HOME_POSITION);
+const ORIGIN = new Vector3(0, 0, 0);
 
 type RowConfig = {
     z: number;        // profundidad de la fila (+ = hacia tu portería, - = hacia el rival)
@@ -252,6 +258,35 @@ function FutsalHall() {
     );
 }
 
+// Lleva la cámara a la vista inicial con una transición suave. Si el usuario toca el campo
+// mientras tanto, la transición se detiene.
+function CameraReset({ request }: { request: number }) {
+    const camera = useThree((state) => state.camera);
+    const controls = useThree((state) => state.controls) as OrbitControlsImpl | null;
+    const animating = useRef(false);
+
+    useEffect(() => {
+        if (request) animating.current = true;
+    }, [request]);
+
+    useEffect(() => {
+        if (!controls) return;
+        const stop = () => { animating.current = false; };
+        controls.addEventListener("start", stop);
+        return () => controls.removeEventListener("start", stop);
+    }, [controls]);
+
+    useFrame(() => {
+        if (!animating.current || !controls) return;
+        camera.position.lerp(HOME, 0.12);
+        controls.target.lerp(ORIGIN, 0.12);
+        controls.update();
+        if (camera.position.distanceTo(HOME) < 0.02 && controls.target.length() < 0.01) animating.current = false;
+    });
+
+    return null;
+}
+
 function PitchScene({ playersByRole, roles, onSelect }: Pick<PlayerPitch3DProps, "playersByRole" | "roles" | "onSelect">) {
     // Textura cacheada por useLoader: sin clone ni dispose
     const fieldMap = useLoader(TextureLoader, "/fotos/Campo.jpg");
@@ -296,6 +331,7 @@ export const PlayerPitch3D = memo(function PlayerPitch3D({
     active = true,
 }: PlayerPitch3DProps) {
     const [mounted, setMounted] = useState(false);
+    const [resetRequest, setResetRequest] = useState(0);
     const onReadyRef = useRef(onReady);
     useEffect(() => {
         onReadyRef.current = onReady;
@@ -318,7 +354,7 @@ export const PlayerPitch3D = memo(function PlayerPitch3D({
                     <Canvas
                         frameloop={active ? "always" : "never"}
                         dpr={[1, 1.5]}
-                        camera={{ position: [0, 8.5, 15.5], fov: 46, near: 0.1, far: 80 }}
+                        camera={{ position: HOME_POSITION, fov: 46, near: 0.1, far: 80 }}
                         gl={{ antialias: true, alpha: false, powerPreference: "low-power" }}
                         fallback={<CanvasFallback onError={onError} />}
                         onCreated={handleCreated}
@@ -339,8 +375,18 @@ export const PlayerPitch3D = memo(function PlayerPitch3D({
                             minDistance={8}
                             maxDistance={24}
                         />
+                        <CameraReset request={resetRequest} />
                     </Canvas>
                 </PlayerSceneErrorBoundary>
+            ) : null}
+            {mounted ? (
+                <button
+                    type="button"
+                    onClick={() => setResetRequest((value) => value + 1)}
+                    className="absolute right-2 top-2 z-10 inline-flex min-h-10 items-center gap-1.5 border border-[var(--lime)]/60 bg-black/70 px-3 text-[10px] font-black uppercase tracking-[0.08em] text-white transition hover:bg-[var(--lime)] hover:text-[var(--ink)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--lime)]"
+                >
+                    <RotateCcw size={13} /> Centrar
+                </button>
             ) : null}
         </div>
     );

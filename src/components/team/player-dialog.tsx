@@ -1,14 +1,12 @@
 "use client";
 
-import { useState } from "react";
 import { X } from "lucide-react";
-import { PlayerCard } from "@/components/team/player-card";
+import { PlayerCard, PlayerMatchDetail } from "@/components/team/player-card";
 import { ShareButton } from "@/components/team/share-button";
 import { useModalDialog } from "@/components/team/use-modal-dialog";
 import type { Player } from "@/lib/team-types";
 
 export function PlayerDialog({ player, onClose }: { player: Player; onClose: () => void }) {
-    const [cardTilt, setCardTilt] = useState({ x: 0, y: 0 });
     const dialogRef = useModalDialog<HTMLElement>(onClose);
 
     return (
@@ -34,26 +32,14 @@ export function PlayerDialog({ player, onClose }: { player: Player; onClose: () 
                     <X size={21} />
                 </button>
                 <h2 id="selected-player-title" className="sr-only">Ficha de {player.name}</h2>
-                <div
-                    className="player-profile-card"
-                    onPointerMove={(event) => {
-                        if (event.pointerType !== "mouse") return;
-                        const bounds = event.currentTarget.getBoundingClientRect();
-                        const x = (event.clientX - bounds.left) / bounds.width - 0.5;
-                        const y = (event.clientY - bounds.top) / bounds.height - 0.5;
-                        setCardTilt({ x: x * 8, y: y * -8 });
-                    }}
-                    onPointerLeave={() => setCardTilt({ x: 0, y: 0 })}
-                    style={{ transform: `perspective(1200px) rotateX(${cardTilt.y}deg) rotateY(${cardTilt.x}deg)` }}
-                >
-                    <PlayerCard player={player} index={0} featured />
+                <div className="player-profile-card pt-12">
+                    <PlayerCard player={player} />
                 </div>
                 <div className="mt-3 flex justify-center">
                     <ShareButton path={`/jugador/${player.id}`} title={`Ficha de ${player.name}`} text={`🃏 Ficha de ${player.name}`} className="bg-black/70" />
                 </div>
-                {/* Indicación según el dispositivo: con ratón la carta se inclina; en el móvil se cierra tocando fuera. */}
-                <p className="mt-3 hidden text-center text-[10px] font-bold uppercase tracking-[0.16em] text-white/50 [@media(hover:hover)]:block">Mueve el puntero sobre la carta · Esc para cerrar</p>
-                <p className="mt-3 text-center text-[10px] font-bold uppercase tracking-[0.16em] text-white/50 [@media(hover:hover)]:hidden">Toca fuera de la carta o la X para cerrar</p>
+                <PlayerMatchDetail player={player} />
+                <p className="mt-3 text-center text-[10px] font-bold uppercase tracking-[0.16em] text-white/50">Arrastra la carta a un lado o tócala para darle la vuelta</p>
             </section>
         </div>
     );
