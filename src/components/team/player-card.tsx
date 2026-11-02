@@ -31,7 +31,7 @@ function PlayerVideo({ player }: { player: Player }) {
     return (
         <video
             ref={videoRef}
-            className="h-full w-full object-contain object-bottom"
+            className="h-full w-full object-cover object-top"
             src={player.video ?? undefined}
             muted
             playsInline
@@ -81,9 +81,9 @@ export function PlayerCard({ player }: { player: Player }) {
                 className="collect-card"
                 {...handlers}
             >
-                <div className="collect-face">
-                    <div className="collect-face-in">
-                        <div className="collect-media">
+                <div className="collect-face collect-front">
+                    <div className={`collect-face-in${player.video ? " has-video" : ""}`}>
+                        <div className={player.video ? "collect-media collect-media-video" : "collect-media"}>
                             {player.video
                                 ? <PlayerVideo player={player} />
                                 : player.photo

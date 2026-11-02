@@ -20,7 +20,7 @@ type SpinState = {
 // Giro de una carta con el dedo o el ratón. Arrastrarla a los lados la gira; al soltarla se queda
 // en la cara más cercana (con inercia) y un toque le da la vuelta. En reposo se balancea un poco.
 // Escribe el giro directamente en el estilo del elemento (sin renders por fotograma) y expone
-// --shine, la posición de la franja de luz del holográfico, que depende del giro y no del dedo.
+// data-side (la cara visible) y --shine, la posición de la franja de luz del holográfico, que depende del giro y no del dedo.
 export function useCardSpin<T extends HTMLElement>() {
     const ref = useRef<T>(null);
     const [flipped, setFlipped] = useState(false);
@@ -46,6 +46,10 @@ export function useCardSpin<T extends HTMLElement>() {
                 showX = state.rotX + Math.sin(seconds * 0.8) * 4 * sway;
             }
             element.style.transform = `rotateX(${showX}deg) rotateY(${showY}deg)`;
+            // Safari no siempre respeta backface-visibility (vídeo, fundidos), así que se oculta a mano
+            // la cara que no mira hacia el usuario para que nunca se vea del revés.
+            const side = Math.cos((showY * Math.PI) / 180) >= 0 ? "front" : "back";
+            if (element.dataset.side !== side) element.dataset.side = side;
             element.style.setProperty("--shine", `${50 + Math.sin((showY * Math.PI / 180) * 2.2) * 70 + showX * 2}%`);
             frame = requestAnimationFrame(tick);
         };
