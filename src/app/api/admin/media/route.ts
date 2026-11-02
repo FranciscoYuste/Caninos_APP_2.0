@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { ACTIVE_PHASE, ACTIVE_SEASON, isFeaturedMatch } from "@/lib/config";
+import { isManagedMatch } from "@/lib/admin-competition";
+import { isFeaturedMatch } from "@/lib/config";
 import { isMediaKind, MEDIA_BUCKET, MEDIA_KINDS, mediaExtension, mediaPrefix, type MediaKind } from "@/lib/media";
 import { requireAdmin } from "@/lib/supabase/require-admin";
 
@@ -20,10 +21,10 @@ async function loadTarget(adminClient: SupabaseClient, kind: MediaKind, id: stri
         return { currentUrl: (data as Record<string, string | null>)[column] };
     }
     const { data, error } = await adminClient
-        .from("partidos").select("temporada,fase,equipo_local,equipo_visitante,foto_convocatoria_url").eq("id", id).maybeSingle();
+        .from("partidos").select("temporada,fase,grupo,equipo_local,equipo_visitante,foto_convocatoria_url").eq("id", id).maybeSingle();
     if (error) throw new Error("No se pudo consultar el partido.");
-    if (!data || data.temporada !== ACTIVE_SEASON || data.fase !== ACTIVE_PHASE || !isFeaturedMatch(data)) {
-        return { error: "Solo se pueden subir fotos de partidos del Bayern en la competición activa." };
+    if (!data || !isFeaturedMatch(data) || !(await isManagedMatch(adminClient, data))) {
+        return { error: "Solo se pueden subir fotos de partidos del Bayern de una competición dada de alta." };
     }
     return { currentUrl: data.foto_convocatoria_url };
 }

@@ -2,20 +2,27 @@
 
 import { FormEvent, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ArrowLeft, Check, FileUp } from "lucide-react";
 import { AdminCallupForm, type CallupFormMatch } from "@/components/admin-callup-form";
+import { AdminCompetitionsManager } from "@/components/admin-competitions-manager";
 import { AdminKatsuManager } from "@/components/admin-katsu-manager";
 import { AdminInjuryManager } from "@/components/admin-injury-manager";
 import { AdminMatchChronicleManager } from "@/components/admin-match-chronicle-manager";
 import { AdminMediaManager, type MediaMatch, type MediaPlayer } from "@/components/admin-media-manager";
-import { ACTIVE_PHASE, ACTIVE_SEASON } from "@/lib/config";
+import { AdminTeamsManager, type AdminTeam } from "@/components/admin-teams-manager";
+import type { Competition } from "@/lib/competition-data";
+import { competitionPath } from "@/lib/competition-paths";
+
+const STATUS_LABELS: Record<Competition["status"], string> = { pendiente: "Pendiente", en_curso: "En curso", finalizada: "Finalizada" };
 
 type KatsuMatch = { id: string; jornada: number; home: string; away: string; score: string | null; playerId: string | null };
 type KatsuPlayer = { id: string; name: string; number: number | null };
 type InjuryPlayer = { id: string; name: string; number: number | null; injured: boolean; injuryDescription: string | null };
 type ChronicleMatch = { id: string; jornada: number; home: string; away: string; chronicle: string | null };
 
-export function AdminImporter({ katsuMatches, katsuPlayers, injuryPlayers, chronicleMatches, callupMatches, mediaMatches, mediaPlayers }: { katsuMatches: KatsuMatch[]; katsuPlayers: KatsuPlayer[]; injuryPlayers: InjuryPlayer[]; chronicleMatches: ChronicleMatch[]; callupMatches: CallupFormMatch[]; mediaMatches: MediaMatch[]; mediaPlayers: MediaPlayer[] }) {
+export function AdminImporter({ competition, competitions, teams, katsuMatches, katsuPlayers, injuryPlayers, chronicleMatches, callupMatches, mediaMatches, mediaPlayers }: { competition: Competition; competitions: Competition[]; teams: AdminTeam[]; katsuMatches: KatsuMatch[]; katsuPlayers: KatsuPlayer[]; injuryPlayers: InjuryPlayer[]; chronicleMatches: ChronicleMatch[]; callupMatches: CallupFormMatch[]; mediaMatches: MediaMatch[]; mediaPlayers: MediaPlayer[] }) {
+    const router = useRouter();
     const [resultsMessage, setResultsMessage] = useState("");
     const [resultsError, setResultsError] = useState(false);
     const [resultsBusy, setResultsBusy] = useState(false);
@@ -131,22 +138,33 @@ export function AdminImporter({ katsuMatches, katsuPlayers, injuryPlayers, chron
             <Link href="/" className="inline-flex items-center gap-2 text-xs uppercase tracking-wider text-[var(--muted)] hover:text-white"><ArrowLeft size={15} /> Volver al equipo</Link>
             <p className="mt-14 text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--lime)]">Administración</p>
             <h1 className="mt-2 text-4xl font-black uppercase">Actualizar competición</h1>
-            <p className="mt-3 max-w-xl text-sm leading-6 text-[var(--muted)]">Cada competición mantiene sus propios resultados, convocatorias y estadísticas, asociados a su fase y grupo en la base de datos. La plantilla y posición de los jugadores es común para todas. Abre una competición para ver sus ficheros.</p>
+            <p className="mt-3 max-w-xl text-sm leading-6 text-[var(--muted)]">Cada competición mantiene sus propios resultados, convocatorias y estadísticas. La plantilla y posición de los jugadores es común para todas. Elige qué competición gestionar.</p>
+
+            <label className="mt-6 block text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--muted)]">
+                Gestionando
+                <select
+                    value={competition.id}
+                    onChange={(event) => router.push(`/admin?competicion=${event.target.value}`)}
+                    className="mt-2 w-full border border-[var(--lime)]/60 bg-[var(--panel)] px-3 py-3 text-sm font-bold normal-case tracking-normal text-white focus:border-[var(--lime)] focus:outline-none"
+                >
+                    {competitions.map((item) => <option key={item.id} value={item.id}>{item.season} · {item.name}{item.group ? ` · ${item.group}` : ""} ({STATUS_LABELS[item.status]})</option>)}
+                </select>
+            </label>
 
             <details open className="mt-8 border border-[var(--lime)]/50 bg-[var(--panel)]">
                 <summary className="cursor-pointer list-none px-5 py-5 text-lg font-black uppercase marker:hidden sm:px-7">
-                    Liga de invierno <span className="ml-2 text-[10px] font-bold tracking-[0.12em] text-[var(--lime)]">ACTIVA · {ACTIVE_SEASON}</span>
+                    {competition.name} <span className="ml-2 text-[10px] font-bold tracking-[0.12em] text-[var(--lime)]">{STATUS_LABELS[competition.status].toUpperCase()} · {competition.season}</span>
                 </summary>
+                <p className="px-5 pb-4 text-xs text-[var(--muted)] sm:px-7">Página pública: <Link href={competitionPath(competition)} className="font-mono text-[var(--lime)] underline-offset-4 hover:underline">{competitionPath(competition)}</Link></p>
                 <div className="space-y-6 border-t border-[var(--line)] p-5 sm:p-7">
                 <details className="border border-[var(--line)]">
                 <summary className="cursor-pointer list-none p-4 text-base font-black uppercase marker:hidden">1. Resultados</summary>
                 <div className="border-t border-[var(--line)] p-4">
-                <p className="mt-2 text-sm leading-6 text-[var(--muted)]">Descarga la plantilla actualizada desde Supabase: contiene los 66 partidos y conserva los resultados ya importados. Cambia solo los marcadores que quieras actualizar; las celdas vacías no borran resultados anteriores.</p>
-                <a href={`/api/admin/templates?tipo=resultados&fase=${ACTIVE_PHASE}`} className="mt-4 inline-flex border border-[var(--lime)] px-4 py-3 text-xs font-bold uppercase text-[var(--lime)] hover:bg-[var(--lime)] hover:text-[var(--ink)]">Descargar plantilla actualizada</a>
+                <p className="mt-2 text-sm leading-6 text-[var(--muted)]">Descarga la plantilla actualizada desde Supabase: contiene todos los partidos de esta competición y conserva los resultados ya importados. Cambia solo los marcadores que quieras actualizar; las celdas vacías no borran resultados anteriores. Si la competición es nueva y aún no tiene calendario, la plantilla sale vacía: rellena una fila por partido (temporada, jornada, códigos de local y visitante) sin goles y súbela para crear el calendario.</p>
+                <a href={`/api/admin/templates?tipo=resultados&competicion=${competition.id}`} className="mt-4 inline-flex border border-[var(--lime)] px-4 py-3 text-xs font-bold uppercase text-[var(--lime)] hover:bg-[var(--lime)] hover:text-[var(--ink)]">Descargar plantilla actualizada</a>
                 <form onSubmit={submitResults} className="mt-5">
                     <label htmlFor="archivo-resultados" className="mb-2 block text-xs font-semibold">Archivo de resultados (CSV o JSON)</label>
-                    <input type="hidden" name="fase" value={ACTIVE_PHASE} />
-                    <input type="hidden" name="grupo" value="" />
+                    <input type="hidden" name="competicion_id" value={competition.id} />
                     <input id="archivo-resultados" name="archivo" type="file" accept=".json,.csv,application/json,text/csv" required className="block w-full cursor-pointer border border-[var(--line)] bg-[var(--ink)] p-3 text-xs text-[var(--muted)] file:mr-4 file:border-0 file:bg-[var(--lime)] file:px-3 file:py-2 file:text-xs file:font-bold file:text-[var(--ink)]" />
                     <p className="mt-2 text-[10px] text-[var(--muted)]">Edita la plantilla con Excel y guárdala como CSV UTF-8 antes de subirla · máximo 5 MB</p>
                     {resultsMessage && <p role="status" className={`mt-4 text-sm ${resultsError ? "text-red-300" : "text-[var(--lime)]"}`}>{resultsMessage}</p>}
@@ -164,12 +182,11 @@ export function AdminImporter({ katsuMatches, katsuPlayers, injuryPlayers, chron
                 <summary className="cursor-pointer text-xs font-bold uppercase text-[var(--muted)]">Carga masiva por CSV</summary>
                 <p className="mt-2 text-sm leading-6 text-[var(--muted)]">Puedes cargar las convocatorias semana a semana, aunque aún no se conozcan la fecha, la hora o el campo: la fecha prevista es solo informativa y no se convierte en horario confirmado. En la columna «convocado», marca sí/no para cada jugador de la jornada; las filas vacías conservan su estado anterior. Cuando se confirme, añade fecha y hora definitivas juntas y el campo una sola vez por partido. Una carga posterior conserva el horario confirmado si esos campos se dejan vacíos.</p>
                 <div className="mt-4 flex flex-wrap gap-3">
-                    <a href={`/api/admin/templates?tipo=convocatoria&fase=${ACTIVE_PHASE}`} className="inline-flex border border-[var(--lime)] px-4 py-3 text-xs font-bold uppercase text-[var(--lime)] hover:bg-[var(--lime)] hover:text-[var(--ink)]">Descargar plantilla actualizada</a>
+                    <a href={`/api/admin/templates?tipo=convocatoria&competicion=${competition.id}`} className="inline-flex border border-[var(--lime)] px-4 py-3 text-xs font-bold uppercase text-[var(--lime)] hover:bg-[var(--lime)] hover:text-[var(--ink)]">Descargar plantilla actualizada</a>
                 </div>
                 <form onSubmit={submitCallups} className="mt-5">
                     <label htmlFor="archivo-convocatoria" className="mb-2 block text-xs font-semibold">Archivo de convocatoria (CSV)</label>
-                    <input type="hidden" name="fase" value={ACTIVE_PHASE} />
-                    <input type="hidden" name="grupo" value="" />
+                    <input type="hidden" name="competicion_id" value={competition.id} />
                     <input id="archivo-convocatoria" name="archivo" type="file" accept=".csv,text/csv" required className="block w-full cursor-pointer border border-[var(--line)] bg-[var(--ink)] p-3 text-xs text-[var(--muted)] file:mr-4 file:border-0 file:bg-[var(--lime)] file:px-3 file:py-2 file:text-xs file:font-bold file:text-[var(--ink)]" />
                     <p className="mt-2 text-[10px] text-[var(--muted)]">CSV UTF-8 · máximo 5 MB · solo existe «convocado» sí/no; puedes dejar jornadas sin rellenar</p>
                     {callupsMessage && <p role="status" className={`mt-4 text-sm ${callupsError ? "text-red-300" : "text-[var(--lime)]"}`}>{callupsMessage}</p>}
@@ -183,11 +200,10 @@ export function AdminImporter({ katsuMatches, katsuPlayers, injuryPlayers, chron
                 <div className="border-t border-[var(--line)] p-4">
                 <p className="mt-2 text-sm leading-6 text-[var(--muted)]">Después de importar la convocatoria, descarga la plantilla actualizada. Incluye jugadores y estadísticas ya guardadas para cada partido del Bayern. Completa estadísticas solo para jugadores convocados que tengan datos; un convocado puede tener una fila de estadísticas o no tenerla. Deja todas las columnas vacías si no hay estadísticas que registrar. Las filas con todo a cero también se consideran sin datos.</p>
                 <p className="mt-2 text-xs leading-5 text-[var(--muted)]">Al reimportar, para cada partido incluido se sustituye el detalle por lo que indique el archivo. Descarga una plantilla nueva antes de editar para conservar los datos anteriores; las estadísticas de los demás partidos no cambian.</p>
-                <a href={`/api/admin/templates?tipo=estadisticas&fase=${ACTIVE_PHASE}`} className="mt-4 inline-flex border border-[var(--lime)] px-4 py-3 text-xs font-bold uppercase text-[var(--lime)] hover:bg-[var(--lime)] hover:text-[var(--ink)]">Descargar plantilla actualizada</a>
+                <a href={`/api/admin/templates?tipo=estadisticas&competicion=${competition.id}`} className="mt-4 inline-flex border border-[var(--lime)] px-4 py-3 text-xs font-bold uppercase text-[var(--lime)] hover:bg-[var(--lime)] hover:text-[var(--ink)]">Descargar plantilla actualizada</a>
                 <form onSubmit={submitPlayerStats} className="mt-5">
                     <label htmlFor="archivo-estadisticas" className="mb-2 block text-xs font-semibold">Archivo de estadísticas (CSV)</label>
-                    <input type="hidden" name="fase" value={ACTIVE_PHASE} />
-                    <input type="hidden" name="grupo" value="" />
+                    <input type="hidden" name="competicion_id" value={competition.id} />
                     <input id="archivo-estadisticas" name="archivo" type="file" accept=".csv,text/csv" required className="block w-full cursor-pointer border border-[var(--line)] bg-[var(--ink)] p-3 text-xs text-[var(--muted)] file:mr-4 file:border-0 file:bg-[var(--lime)] file:px-3 file:py-2 file:text-xs file:font-bold file:text-[var(--ink)]" />
                     <p className="mt-2 text-[10px] text-[var(--muted)]">Edita en Excel y guarda como CSV UTF-8 · máximo 5 MB</p>
                     {statsMessage && <p role="status" className={`mt-4 text-sm ${statsError ? "text-red-300" : "text-[var(--lime)]"}`}>{statsMessage}</p>}
@@ -227,18 +243,18 @@ export function AdminImporter({ katsuMatches, katsuPlayers, injuryPlayers, chron
             </details>
 
             <details className="mt-4 border border-[var(--line)] bg-[var(--panel)]">
-                <summary className="cursor-pointer list-none px-5 py-5 text-lg font-black uppercase sm:px-7">Liga de ascenso o descenso <span className="ml-2 text-[10px] font-bold tracking-[0.12em] text-[var(--muted)]">PENDIENTE DE CLASIFICACIÓN</span></summary>
-                <div className="space-y-4 border-t border-[var(--line)] p-5 sm:p-7">
-                    <p className="text-sm leading-6 text-[var(--muted)]">Al terminar la Liga de invierno se habilitará el grupo que corresponda. Los resultados, convocatorias y estadísticas tendrán su propia fase en la base de datos; la ficha de jugadores seguirá siendo común.</p>
-                    {["Resultados y calendario", "Convocatorias y horarios", "Estadísticas por partido"].map((label) => <div key={label} className="border border-[var(--line)] p-4"><h3 className="text-sm font-bold uppercase">{label}</h3><p className="mt-1 text-xs text-[var(--muted)]">Pendiente de conocer equipos y calendario. Se habilitará su plantilla propia cuando se cargue el calendario.</p></div>)}
+                <summary className="cursor-pointer list-none px-5 py-5 text-lg font-black uppercase marker:hidden sm:px-7">Competiciones y temporadas</summary>
+                <div className="border-t border-[var(--line)] p-5 sm:p-7">
+                    <p className="text-sm leading-6 text-[var(--muted)]">Da de alta cada competición (liga de ascenso o descenso, copa, la liga de una temporada nueva…) y marca su estado. La web pública muestra la que esté «En curso»; las «Finalizadas» quedan en el archivo y las «Pendientes» aparecen con un aviso. El tipo, el grupo y la temporada solo se pueden cambiar mientras la competición no tenga partidos.</p>
+                    <AdminCompetitionsManager competitions={competitions} managingId={competition.id} />
                 </div>
             </details>
 
             <details className="mt-4 border border-[var(--line)] bg-[var(--panel)]">
-                <summary className="cursor-pointer list-none px-5 py-5 text-lg font-black uppercase sm:px-7">Copa <span className="ml-2 text-[10px] font-bold tracking-[0.12em] text-[var(--muted)]">PENDIENTE DE FORMATO</span></summary>
-                <div className="space-y-4 border-t border-[var(--line)] p-5 sm:p-7">
-                    <p className="text-sm leading-6 text-[var(--muted)]">Se prevé separar la fase de grupos del cuadro eliminatorio. No se generan plantillas hasta confirmar el formato, los equipos, los grupos y las reglas del cuadro.</p>
-                    {["Resultados y grupos", "Convocatorias y horarios", "Estadísticas por partido", "Cuadro eliminatorio"].map((label) => <div key={label} className="border border-[var(--line)] p-4"><h3 className="text-sm font-bold uppercase">{label}</h3><p className="mt-1 text-xs text-[var(--muted)]">Pendiente de formato y calendario. Sus datos quedarán asociados a la fase y al grupo/etapa correspondientes.</p></div>)}
+                <summary className="cursor-pointer list-none px-5 py-5 text-lg font-black uppercase marker:hidden sm:px-7">Equipos rivales</summary>
+                <div className="border-t border-[var(--line)] p-5 sm:p-7">
+                    <p className="text-sm leading-6 text-[var(--muted)]">Códigos que se usan en las columnas codigo_local y codigo_visitante de los CSV. Añade aquí los rivales de una competición nueva antes de subir su calendario. Un equipo con partidos no se puede eliminar.</p>
+                    <AdminTeamsManager teams={teams} />
                 </div>
             </details>
 

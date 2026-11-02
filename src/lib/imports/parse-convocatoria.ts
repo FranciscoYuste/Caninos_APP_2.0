@@ -1,5 +1,5 @@
 import { FEATURED_TEAM } from "@/lib/config";
-import { DEFAULT_SEASON, parseCsvRows, TEAM_CODES } from "@/lib/imports/parse-jornada";
+import { parseCsvRows, type ImportContext } from "@/lib/imports/parse-jornada";
 
 export type ImportedCallup = {
     jornada: number;
@@ -47,15 +47,15 @@ export function normalizeTime(value: string): string {
     return `${match[1].padStart(2, "0")}:${match[2]}:${match[3] ?? "00"}`;
 }
 
-function teamName(row: Record<string, string>, codeColumn: string, nameColumn: string): string {
+function teamName(row: Record<string, string>, codeColumn: string, nameColumn: string, teamCodes: Record<string, string>): string {
     const code = String(row[codeColumn] ?? "").trim().toUpperCase();
     const name = String(row[nameColumn] ?? "").trim();
-    const resolved = code ? TEAM_CODES[code] : name;
+    const resolved = code ? teamCodes[code] : name;
     if (!resolved) throw new Error(`Indica ${codeColumn} o ${nameColumn} con un equipo válido.`);
     return resolved;
 }
 
-export function parseConvocatoriaCsv(text: string): CallupImport {
+export function parseConvocatoriaCsv(text: string, { season: defaultSeason, teamCodes }: ImportContext): CallupImport {
     const [rawHeaders, ...dataRows] = parseCsvRows(text);
     const headers = rawHeaders.map((header) => header.replace(/^\uFEFF/, "").trim().toLowerCase());
     const requiredHeaders = ["temporada", "jornada", "fecha", "hora", "campo", "jugador_id", "convocado"];
@@ -84,12 +84,12 @@ export function parseConvocatoriaCsv(text: string): CallupImport {
         const time = rawTime ? normalizeTime(rawTime) : "";
         const field = String(row.campo ?? "").trim();
 
-        const home = teamName(row, "codigo_local", "equipo_local");
-        const away = teamName(row, "codigo_visitante", "equipo_visitante");
+        const home = teamName(row, "codigo_local", "equipo_local", teamCodes);
+        const away = teamName(row, "codigo_visitante", "equipo_visitante", teamCodes);
         if (home !== FEATURED_TEAM && away !== FEATURED_TEAM) {
             throw new Error(`La plantilla de convocatoria solo admite partidos del ${FEATURED_TEAM}.`);
         }
-        const currentSeason = String(row.temporada ?? "").trim() || DEFAULT_SEASON;
+        const currentSeason = String(row.temporada ?? "").trim() || defaultSeason;
         if (season !== undefined && currentSeason !== season) throw new Error("Un archivo debe contener una sola temporada.");
         season = currentSeason;
 
@@ -132,5 +132,5 @@ export function parseConvocatoriaCsv(text: string): CallupImport {
         }
     }
     if (!updatedMatches.length) throw new Error("Marca convocado como sí o no en al menos una jornada, o completa un horario definitivo.");
-    return { temporada: season ?? DEFAULT_SEASON, partidos: updatedMatches };
+    return { temporada: season ?? defaultSeason, partidos: updatedMatches };
 }

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { ACTIVE_PHASE, ACTIVE_SEASON, isFeaturedMatch } from "@/lib/config";
+import { isManagedMatch } from "@/lib/admin-competition";
+import { isFeaturedMatch } from "@/lib/config";
 import { normalizeDate, normalizeTime } from "@/lib/imports/parse-convocatoria";
 import { requireAdmin } from "@/lib/supabase/require-admin";
 
@@ -61,8 +62,8 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: "No se pudo consultar el partido." }, { status: 500 });
         }
         if (!match) return NextResponse.json({ error: "No existe el partido indicado." }, { status: 404 });
-        if (match.temporada !== ACTIVE_SEASON || match.fase !== ACTIVE_PHASE || !isFeaturedMatch(match)) {
-            return NextResponse.json({ error: `Solo se pueden convocar partidos del Bayern en la competición activa (${ACTIVE_SEASON}).` }, { status: 400 });
+        if (!isFeaturedMatch(match) || !(await isManagedMatch(adminClient, match))) {
+            return NextResponse.json({ error: "Solo se pueden convocar partidos del Bayern de una competición dada de alta." }, { status: 400 });
         }
 
         if (players.length) {

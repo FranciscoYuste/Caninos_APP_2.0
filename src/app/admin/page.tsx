@@ -2,12 +2,13 @@ import { redirect } from "next/navigation";
 import { AdminImporter } from "@/components/admin-importer";
 import type { CallupFormMatch } from "@/components/admin-callup-form";
 import type { MediaMatch, MediaPlayer } from "@/components/admin-media-manager";
-import { ACTIVE_PHASE, ACTIVE_SEASON, isFeaturedMatch } from "@/lib/config";
+import { loadAdminCompetitions } from "@/lib/admin-competition";
+import { isFeaturedMatch } from "@/lib/config";
 import { madridDate, madridTime } from "@/lib/madrid-time";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-export default async function AdminPage() {
+export default async function AdminPage({ searchParams }: { searchParams: Promise<{ competicion?: string }> }) {
     const sessionClient = await createSupabaseServerClient();
     const { data: { user } } = await sessionClient.auth.getUser();
     if (!user) redirect("/login?next=%2Fadmin");
@@ -16,12 +17,21 @@ export default async function AdminPage() {
     const { data: profile } = await adminClient.from("perfiles").select("rol").eq("id", user.id).single();
     if (profile?.rol !== "admin") redirect("/");
 
-    const [matchResult, playerResult, callupResult] = await Promise.all([
+    // Competición que se gestiona: la elegida en el selector o, por defecto, la que está en curso.
+    const competitions = await loadAdminCompetitions(adminClient);
+    const requestedId = (await searchParams).competicion;
+    const competition = competitions.find((item) => item.id === requestedId)
+        ?? competitions.find((item) => item.status === "en_curso")
+        ?? competitions[0];
+    if (!competition) throw new Error("No hay competiciones dadas de alta. Ejecuta la migración de competiciones.");
+
+    const [matchResult, playerResult, callupResult, teamResult] = await Promise.all([
         adminClient
             .from("partidos")
             .select("id,jornada,fecha,campo,equipo_local,equipo_visitante,goles_local,goles_visitante,jugador_katsu_id,cronica,foto_convocatoria_url")
-            .eq("temporada", ACTIVE_SEASON)
-            .eq("fase", ACTIVE_PHASE)
+            .eq("temporada", competition.season)
+            .eq("fase", competition.phase)
+            .eq("grupo", competition.group)
             .order("jornada"),
         adminClient
             .from("jugadores")
@@ -30,14 +40,17 @@ export default async function AdminPage() {
             .order("dorsal", { nullsFirst: false }),
         adminClient
             .from("convocatorias")
-            .select("partido_id,jugador_id,convocado,partidos!inner(temporada,fase)")
-            .eq("partidos.temporada", ACTIVE_SEASON)
-            .eq("partidos.fase", ACTIVE_PHASE),
+            .select("partido_id,jugador_id,convocado,partidos!inner(temporada,fase,grupo)")
+            .eq("partidos.temporada", competition.season)
+            .eq("partidos.fase", competition.phase)
+            .eq("partidos.grupo", competition.group),
+        adminClient.from("equipos").select("codigo,nombre").order("codigo"),
     ]);
     const queryErrors = [
         { resource: "partidos para administración", error: matchResult.error },
         { resource: "jugadores para administración", error: playerResult.error },
         { resource: "convocatorias para administración", error: callupResult.error },
+        { resource: "equipos para administración", error: teamResult.error },
     ].filter(({ error }) => error);
     if (queryErrors.length) {
         console.error("Could not load match administration data", queryErrors);
@@ -105,6 +118,10 @@ export default async function AdminPage() {
 
     return (
         <AdminImporter
+            key={competition.id}
+            competition={competition}
+            competitions={competitions}
+            teams={(teamResult.data ?? []).map((team) => ({ code: team.codigo, name: team.nombre }))}
             katsuMatches={katsuMatches}
             katsuPlayers={katsuPlayers}
             injuryPlayers={injuryPlayers}

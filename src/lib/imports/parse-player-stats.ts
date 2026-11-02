@@ -1,5 +1,5 @@
 import { FEATURED_TEAM } from "@/lib/config";
-import { DEFAULT_SEASON, parseCsvRows, TEAM_CODES } from "@/lib/imports/parse-jornada";
+import { parseCsvRows, type ImportContext } from "@/lib/imports/parse-jornada";
 
 type PlayerMatchStatistics = {
     goles: number;
@@ -45,15 +45,15 @@ function asCount(value: string, field: string): number {
     return parsed;
 }
 
-function teamName(row: Record<string, string>, codeColumn: string, nameColumn: string): string {
+function teamName(row: Record<string, string>, codeColumn: string, nameColumn: string, teamCodes: Record<string, string>): string {
     const code = String(row[codeColumn] ?? "").trim().toUpperCase();
     const name = String(row[nameColumn] ?? "").trim();
-    const resolved = code ? TEAM_CODES[code] : name;
+    const resolved = code ? teamCodes[code] : name;
     if (!resolved) throw new Error(`Indica ${codeColumn} o ${nameColumn} con un equipo válido.`);
     return resolved;
 }
 
-export function parsePlayerStatsCsv(text: string): PlayerStatsImport {
+export function parsePlayerStatsCsv(text: string, { season: defaultSeason, teamCodes }: ImportContext): PlayerStatsImport {
     const [rawHeaders, ...dataRows] = parseCsvRows(text);
     const headers = rawHeaders.map((header) => header.replace(/^\uFEFF/, "").trim().toLowerCase());
     const requiredHeaders = ["temporada", "jornada", "jugador_id", ...STAT_COLUMNS];
@@ -71,12 +71,12 @@ export function parsePlayerStatsCsv(text: string): PlayerStatsImport {
     for (const row of rows) {
         const jornada = Number(row.jornada);
         if (!Number.isInteger(jornada) || jornada < 1) throw new Error("jornada debe ser un entero mayor que cero.");
-        const home = teamName(row, "codigo_local", "equipo_local");
-        const away = teamName(row, "codigo_visitante", "equipo_visitante");
+        const home = teamName(row, "codigo_local", "equipo_local", teamCodes);
+        const away = teamName(row, "codigo_visitante", "equipo_visitante", teamCodes);
         if (home !== FEATURED_TEAM && away !== FEATURED_TEAM) {
             throw new Error(`Las estadísticas de esta plantilla solo admiten partidos del ${FEATURED_TEAM}.`);
         }
-        const currentSeason = String(row.temporada ?? "").trim() || DEFAULT_SEASON;
+        const currentSeason = String(row.temporada ?? "").trim() || defaultSeason;
         if (season !== undefined && currentSeason !== season) throw new Error("Un archivo debe contener una sola temporada.");
         season = currentSeason;
 
@@ -122,5 +122,5 @@ export function parsePlayerStatsCsv(text: string): PlayerStatsImport {
     }
 
     if (matches.size === 0) throw new Error("Añade estadísticas de al menos un jugador usando su UUID.");
-    return { temporada: season ?? DEFAULT_SEASON, partidos: [...matches.values()] };
+    return { temporada: season ?? defaultSeason, partidos: [...matches.values()] };
 }

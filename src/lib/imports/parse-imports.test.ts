@@ -1,9 +1,19 @@
 import { describe, expect, it } from "vitest";
-import { ACTIVE_SEASON, FEATURED_TEAM } from "@/lib/config";
-import { parseConvocatoriaCsv } from "@/lib/imports/parse-convocatoria";
-import { parseCsvRows, parseJornadaCsv, parseJornadaFile } from "@/lib/imports/parse-jornada";
+import { FEATURED_TEAM } from "@/lib/config";
+import { parseConvocatoriaCsv as parseCallups } from "@/lib/imports/parse-convocatoria";
+import { parseCsvRows, parseJornadaCsv as parseResults, parseJornadaFile as parseResultsFile, type ImportContext } from "@/lib/imports/parse-jornada";
 import { parsePlayerRosterCsv } from "@/lib/imports/parse-player-roster";
-import { parsePlayerStatsCsv } from "@/lib/imports/parse-player-stats";
+import { parsePlayerStatsCsv as parseStats } from "@/lib/imports/parse-player-stats";
+
+const ACTIVE_SEASON = "2026-2027";
+const CONTEXT: ImportContext = {
+    season: ACTIVE_SEASON,
+    teamCodes: { BAY: FEATURED_TEAM, SEV: "Severo Torrejon", TOR: "Torrejon United", LOC: "Locotroes", BLC: "Barrio La Cañada" },
+};
+const parseJornadaCsv = (text: string) => parseResults(text, CONTEXT);
+const parseJornadaFile = (text: string, filename: string) => parseResultsFile(text, filename, CONTEXT);
+const parseConvocatoriaCsv = (text: string) => parseCallups(text, CONTEXT);
+const parsePlayerStatsCsv = (text: string) => parseStats(text, CONTEXT);
 
 const PLAYER_A = "11111111-1111-4111-8111-111111111111";
 const PLAYER_B = "22222222-2222-4222-8222-222222222222";

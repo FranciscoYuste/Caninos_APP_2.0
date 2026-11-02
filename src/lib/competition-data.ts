@@ -14,6 +14,14 @@ export type Competition = {
     status: CompetitionStatus;
 };
 
+export type CompetitionRow = { id: string; temporada: string; fase: string; grupo: string; nombre: string; slug: string; orden: number; estado: string };
+export const COMPETITION_COLUMNS = "id,temporada,fase,grupo,nombre,slug,orden,estado";
+
+export function toCompetition(row: CompetitionRow): Competition | null {
+    if (!isCompetitionPhase(row.fase)) return null;
+    return { id: row.id, season: row.temporada, phase: row.fase, group: row.grupo, name: row.nombre, slug: row.slug, order: row.orden, status: row.estado as CompetitionStatus };
+}
+
 // Respaldo mientras no exista la tabla competiciones (p. ej. antes de ejecutar la migración).
 const FALLBACK_COMPETITIONS: Competition[] = [
     { id: "fallback", season: "2026-2027", phase: "campeon_invierno", group: "", name: "Liga de invierno", slug: "liga-invierno", order: 1, status: "en_curso" },
@@ -25,13 +33,11 @@ export const getCompetitions = cache(async (): Promise<Competition[]> => {
         const supabase = await createSupabaseServerClient();
         const { data, error } = await supabase
             .from("competiciones")
-            .select("id,temporada,fase,grupo,nombre,slug,orden,estado")
+            .select(COMPETITION_COLUMNS)
             .order("temporada", { ascending: false })
             .order("orden");
         if (error) throw error;
-        const competitions = (data ?? []).flatMap((row) => isCompetitionPhase(row.fase)
-            ? [{ id: row.id, season: row.temporada, phase: row.fase, group: row.grupo, name: row.nombre, slug: row.slug, order: row.orden, status: row.estado as CompetitionStatus }]
-            : []);
+        const competitions = (data ?? []).flatMap((row) => toCompetition(row) ?? []);
         return competitions.length ? competitions : FALLBACK_COMPETITIONS;
     } catch (error) {
         if (error instanceof Error && "digest" in error && error.digest === "DYNAMIC_SERVER_USAGE") throw error;

@@ -1,5 +1,3 @@
-import { ACTIVE_SEASON } from "@/lib/config";
-
 export type ImportedMatch = {
     jornada: number;
     fecha: string | null;
@@ -12,22 +10,9 @@ export type ImportedMatch = {
 
 export type JornadaImport = { temporada: string; partidos: ImportedMatch[] };
 
-export const DEFAULT_SEASON = ACTIVE_SEASON;
-
-export const TEAM_CODES: Record<string, string> = {
-    TOR: "Torrejon United",
-    LOC: "Locotroes",
-    MPT: "Manchester Pity",
-    LAG: "Lagartos",
-    SPR: "Sprinfield",
-    DAG: "Daganzo Futsal",
-    ZEU: "Zeus",
-    ZAR: "Zarzuela XXI",
-    BAY: "Bayern D.L.Caninos",
-    SEV: "Severo Torrejon",
-    INT: "Inter T.J.",
-    BLC: "Barrio La Cañada",
-};
+// Contexto de una importación: temporada por defecto (la de la competición que se gestiona)
+// y los códigos de equipo de la tabla equipos (BAY → Bayern D.L.Caninos…).
+export type ImportContext = { season: string; teamCodes: Record<string, string> };
 
 function asCount(value: unknown, label: string): number {
     const parsed = Number(value ?? 0);
@@ -35,7 +20,7 @@ function asCount(value: unknown, label: string): number {
     return parsed;
 }
 
-function normalizeMatch(row: Record<string, unknown>, fallbackSeason: string): { temporada: string; match: ImportedMatch } {
+function normalizeMatch(row: Record<string, unknown>, { season: fallbackSeason, teamCodes }: ImportContext): { temporada: string; match: ImportedMatch } {
     const requiredText = (key: string) => {
         const value = String(row[key] ?? "").trim();
         if (!value) throw new Error(`Falta el campo ${key}.`);
@@ -44,7 +29,7 @@ function normalizeMatch(row: Record<string, unknown>, fallbackSeason: string): {
     const teamName = (codeKey: string, nameKey: string) => {
         const code = String(row[codeKey] ?? "").trim().toUpperCase();
         if (!code) return requiredText(nameKey);
-        const name = TEAM_CODES[code];
+        const name = teamCodes[code];
         if (!name) throw new Error(`Código de equipo no válido en ${codeKey}: ${code}.`);
         return name;
     };
@@ -98,12 +83,12 @@ export function parseCsvRows(text: string): string[][] {
     return rows;
 }
 
-function groupRows(rows: Record<string, unknown>[], fallbackSeason: string): JornadaImport {
+function groupRows(rows: Record<string, unknown>[], context: ImportContext): JornadaImport {
     const matches = new Map<string, ImportedMatch>();
     let season: string | undefined;
 
     for (const row of rows) {
-        const normalized = normalizeMatch(row, fallbackSeason);
+        const normalized = normalizeMatch(row, context);
         if (season !== undefined && normalized.temporada !== season) throw new Error("Un archivo debe contener una sola temporada.");
         season = normalized.temporada;
         const match = normalized.match;
@@ -125,19 +110,19 @@ function groupRows(rows: Record<string, unknown>[], fallbackSeason: string): Jor
         });
     }
     if (matches.size === 0) throw new Error("No se encontraron partidos para importar.");
-    return { temporada: season ?? fallbackSeason, partidos: [...matches.values()] };
+    return { temporada: season ?? context.season, partidos: [...matches.values()] };
 }
 
-export function parseJornadaJson(text: string): JornadaImport {
+export function parseJornadaJson(text: string, context: ImportContext): JornadaImport {
     const data: unknown = JSON.parse(text);
     if (!data || typeof data !== "object" || !Array.isArray((data as { partidos?: unknown }).partidos)) {
         throw new Error("El JSON debe contener un arreglo 'partidos'.");
     }
     const payload = data as { temporada?: string; partidos: Array<Record<string, unknown>> };
-    return groupRows(payload.partidos, String(payload.temporada ?? DEFAULT_SEASON));
+    return groupRows(payload.partidos, { ...context, season: String(payload.temporada ?? context.season) });
 }
 
-export function parseJornadaCsv(text: string): JornadaImport {
+export function parseJornadaCsv(text: string, context: ImportContext): JornadaImport {
     const [headers, ...dataRows] = parseCsvRows(text);
     const requiredHeaders = ["jornada", "goles_local", "goles_visitante"];
     const missing = requiredHeaders.filter((header) => !headers.includes(header));
@@ -148,11 +133,11 @@ export function parseJornadaCsv(text: string): JornadaImport {
         throw new Error("Incluye equipo_local/equipo_visitante o codigo_local/codigo_visitante en el CSV.");
     }
     const rows = dataRows.map((cells) => Object.fromEntries(headers.map((header, index) => [header, cells[index] ?? ""])));
-    return groupRows(rows, DEFAULT_SEASON);
+    return groupRows(rows, context);
 }
 
-export function parseJornadaFile(text: string, filename: string): JornadaImport {
-    if (filename.toLowerCase().endsWith(".json")) return parseJornadaJson(text);
-    if (filename.toLowerCase().endsWith(".csv")) return parseJornadaCsv(text);
+export function parseJornadaFile(text: string, filename: string, context: ImportContext): JornadaImport {
+    if (filename.toLowerCase().endsWith(".json")) return parseJornadaJson(text, context);
+    if (filename.toLowerCase().endsWith(".csv")) return parseJornadaCsv(text, context);
     throw new Error("Formato no soportado. Sube un archivo .json o .csv.");
 }

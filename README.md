@@ -81,7 +81,22 @@ where email = 'TU-CORREO';
 5. La migración `202610180003_players_and_match_statistics.sql` añade los 15 jugadores facilitados, con dorsal vacío y posición «Por definir».
 6. Entra en `/admin`. Hay cuatro cargas independientes: resultados, fichas de jugadores, convocatoria/horario y estadísticas por jugador-partido. En la misma sección de administración puedes asignar o retirar el jugador KATSU por partido; solo se ofrecen encuentros del Bayern D.L.Caninos. También puedes marcar o dar de alta jugadores en el parte médico; el estado de lesión no se modifica al importar CSV. Las plantillas descargadas desde Administración se generan con los datos actuales de Supabase e incluyen los IDs de jugadores. Importa primero resultados, después fichas si las vas a actualizar, luego convocatoria y finalmente estadísticas. El panel público identifica las fechas iniciales como previsiones; la hora y el campo solo aparecen al importar la convocatoria.
 
-La portada `/` muestra el video. Entrar abre `/equipo`, que es público y muestra los datos cargados. Administración solicita iniciar sesión y el servidor comprueba el rol antes de permitir `/admin` o procesar una importación. Las fotos pueden añadirse en `foto_url` (por ejemplo, con imágenes de un bucket público de Supabase Storage).
+La portada `/` muestra el video. Entrar abre `/equipo`, que redirige a la competición en curso (por ejemplo `/2026-2027/liga-invierno`); es público y muestra los datos cargados. Administración solicita iniciar sesión y el servidor comprueba el rol antes de permitir `/admin` o procesar una importación. Las fotos y vídeos se suben desde Administración → Fotos y vídeos (bucket público `caninos-media` de Supabase Storage).
+
+## Empezar una competición o una temporada nueva
+
+Todo se hace desde **Administración**, sin tocar código ni SQL. Cada competición (liga de invierno, liga de ascenso o descenso, copa…) tiene sus propios partidos, clasificación, convocatorias, estadísticas, crónicas y cartas KATSU. La plantilla de jugadores es común.
+
+1. **Competiciones y temporadas → Nueva competición.** Indica el nombre visible (por ejemplo «Liga de ascenso»), la temporada (`2026-2027`), el tipo, el grupo si lo hay y el estado «Pendiente». La dirección web se rellena sola a partir del nombre (`/2026-2027/liga-ascenso`).
+   - Esta temporada ya existen «Liga de ascenso / descenso» y «Copa» como pendientes: cuando se conozcan, edítalas (nombre, tipo, dirección) en lugar de crear otras.
+2. **Equipos rivales.** Añade los equipos nuevos con un código corto (2 a 5 letras o números). Es el código que irá en las columnas `codigo_local` y `codigo_visitante` del CSV.
+3. Arriba del todo, en **Gestionando**, elige la competición nueva. Todas las secciones pasan a trabajar sobre ella.
+4. **1. Resultados → Descargar plantilla actualizada.** Si la competición aún no tiene partidos, la plantilla sale vacía: escribe una fila por partido con temporada, jornada, código local y código visitante, deja los goles vacíos y súbela. Así se crea el calendario.
+5. Cuando empiece, pon la competición **En curso** y la anterior **Finalizada**. `/equipo`, la portada y el icono del móvil llevan siempre a la competición en curso (si hay varias, a la de menor orden de la temporada más reciente).
+
+**Temporada nueva:** igual, pero con la temporada siguiente (`2027-2028`). Las temporadas anteriores siguen visibles en sus direcciones y desde el selector de temporada de la web, con los jugadores que jugaron entonces. Para retirar a un jugador que deja el equipo, márcalo como inactivo en Supabase (**Table Editor → jugadores → activo = false**): desaparece de la temporada actual pero sigue en las pasadas.
+
+Una competición con partidos no se puede borrar ni cambiar de temporada, tipo o grupo (se perderían sus datos); márcala como finalizada. Los tipos de competición disponibles son fijos: si algún día hiciera falta uno nuevo, requiere una migración.
 
 ## Video de bienvenida
 

@@ -13,13 +13,12 @@ export function isCompetitionPhase(value: string): value is CompetitionPhase {
     return COMPETITION_PHASES.includes(value as CompetitionPhase);
 }
 
-export function competitionSlug(phase: CompetitionPhase): string {
-    return {
-        campeon_invierno: "liga-invierno",
-        liga_campeones: "liga-ascenso",
-        clasificacion_descensos: "liga-descenso",
-        copa_grupos: "copa-grupos",
-        copa_campeon: "copa-campeon",
-        copa_consolacion: "copa-consolacion",
-    }[phase];
-}
+// Tipo de competición de cada fase, para los selectores del admin.
+export const PHASE_LABELS: Record<CompetitionPhase, string> = {
+    campeon_invierno: "Liga de invierno",
+    liga_campeones: "Liga de ascenso",
+    clasificacion_descensos: "Liga de descenso",
+    copa_grupos: "Copa · fase de grupos",
+    copa_campeon: "Copa · cuadro de campeón",
+    copa_consolacion: "Copa · cuadro de consolación",
+};
