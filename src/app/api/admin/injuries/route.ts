@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { requireAdmin } from "@/lib/supabase/require-admin";
 
 export const runtime = "nodejs";
 
@@ -8,16 +7,9 @@ const PLAYER_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a
 
 export async function POST(request: Request) {
     try {
-        const sessionClient = await createSupabaseServerClient();
-        const { data: { user } } = await sessionClient.auth.getUser();
-        if (!user) return NextResponse.json({ error: "Inicia sesión para continuar." }, { status: 401 });
-
-        const adminClient = createSupabaseAdminClient();
-        const { data: profile, error: profileError } = await adminClient
-            .from("perfiles").select("rol").eq("id", user.id).single();
-        if (profileError || profile?.rol !== "admin") {
-            return NextResponse.json({ error: "Se requiere el rol de administrador." }, { status: 403 });
-        }
+        const authorization = await requireAdmin();
+        if ("response" in authorization) return authorization.response;
+        const { adminClient } = authorization;
 
         const body = await request.json() as { jugador_id?: unknown; lesionado?: unknown; descripcion_lesion?: unknown };
         if (typeof body.jugador_id !== "string" || !PLAYER_ID_PATTERN.test(body.jugador_id)) {

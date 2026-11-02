@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Check } from "lucide-react";
+import { Check, Eye, Pencil } from "lucide-react";
 
 type ChronicleMatch = { id: string; jornada: number; home: string; away: string; chronicle: string | null };
 type SaveState = { busy: boolean; message: string; error: boolean };
@@ -14,6 +14,7 @@ export function AdminMatchChronicleManager({ matches }: { matches: ChronicleMatc
         Object.fromEntries(matches.map((match) => [match.id, match.chronicle ?? ""])),
     );
     const [saveStates, setSaveStates] = useState<Record<string, SaveState>>({});
+    const [previews, setPreviews] = useState<Record<string, boolean>>({});
 
     async function saveChronicle(matchId: string) {
         const chronicle = drafts[matchId] ?? "";
@@ -62,16 +63,36 @@ export function AdminMatchChronicleManager({ matches }: { matches: ChronicleMatc
                     <article key={match.id} className="border border-[var(--line)] p-4">
                         <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-[var(--lime)]">Jornada {match.jornada}</p>
                         <h3 className="mt-1 text-sm font-bold">{match.home} <span className="font-normal text-[var(--muted)]">vs</span> {match.away}</h3>
-                        <label htmlFor={`match-chronicle-${match.id}`} className="mb-2 mt-4 block text-[10px] font-semibold uppercase tracking-wide">Crónica del partido</label>
-                        <textarea
-                            id={`match-chronicle-${match.id}`}
-                            value={draft}
-                            maxLength={100000}
-                            onChange={(event) => setDrafts((previous) => ({ ...previous, [match.id]: event.target.value }))}
-                            placeholder={"Escribe la crónica del partido. Deja una línea en blanco entre párrafos."}
-                            rows={8}
-                            className="min-h-48 w-full resize-y border border-[var(--line)] bg-[var(--ink)] px-3 py-2 text-sm leading-6 text-white focus:border-[var(--lime)] focus:outline-none"
-                        />
+                        <div className="mb-2 mt-4 flex items-center justify-between gap-3">
+                            <label htmlFor={`match-chronicle-${match.id}`} className="block text-[10px] font-semibold uppercase tracking-wide">Crónica del partido</label>
+                            <button
+                                type="button"
+                                aria-pressed={previews[match.id] ?? false}
+                                onClick={() => setPreviews((previous) => ({ ...previous, [match.id]: !previous[match.id] }))}
+                                className="inline-flex min-h-9 items-center gap-1.5 border border-[var(--line)] px-3 text-[10px] font-bold uppercase text-[var(--muted)] hover:border-[var(--lime)] hover:text-white"
+                            >
+                                {previews[match.id] ? <><Pencil size={12} /> Editar</> : <><Eye size={12} /> Vista previa</>}
+                            </button>
+                        </div>
+                        {previews[match.id] ? (
+                            // Mismo formato que la crónica pública: un párrafo por cada bloque separado por una línea en blanco.
+                            <div className="min-h-48 space-y-4 border border-[var(--lime)]/40 bg-[var(--panel)] px-4 py-3 text-sm leading-7 text-white/85">
+                                {draft.split(/\n\s*\n/).filter((paragraph) => paragraph.trim()).map((paragraph, index) => (
+                                    <p key={index} className="whitespace-pre-wrap">{paragraph}</p>
+                                ))}
+                                {!draft.trim() ? <p className="text-xs text-[var(--muted)]">La crónica está vacía: no se mostrará en la web.</p> : null}
+                            </div>
+                        ) : (
+                            <textarea
+                                id={`match-chronicle-${match.id}`}
+                                value={draft}
+                                maxLength={100000}
+                                onChange={(event) => setDrafts((previous) => ({ ...previous, [match.id]: event.target.value }))}
+                                placeholder={"Escribe la crónica del partido. Deja una línea en blanco entre párrafos."}
+                                rows={8}
+                                className="min-h-48 w-full resize-y border border-[var(--line)] bg-[var(--ink)] px-3 py-2 text-sm leading-6 text-white focus:border-[var(--lime)] focus:outline-none"
+                            />
+                        )}
                         <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
                             <span className="text-[10px] text-[var(--muted)]">{draft.length.toLocaleString("es-ES")} / 100.000 caracteres · separa los párrafos con una línea en blanco</span>
                             <button

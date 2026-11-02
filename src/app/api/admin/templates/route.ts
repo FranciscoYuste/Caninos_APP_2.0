@@ -1,12 +1,11 @@
 import { NextResponse } from "next/server";
-import { competitionSlug, isCompetitionPhase, type CompetitionPhase } from "@/lib/competitions";
-import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { loadAdminCompetition } from "@/lib/admin-competition";
+import { isFeaturedMatch } from "@/lib/config";
+import { madridDate, madridTime } from "@/lib/madrid-time";
+import { requireAdmin } from "@/lib/supabase/require-admin";
 
 export const runtime = "nodejs";
 
-const SEASON = "2026-2027";
-const FEATURED_TEAM = "Bayern D.L.Caninos";
 const STAT_COLUMNS = [
     "goles",
     "asistencias",
@@ -46,44 +45,18 @@ function csvResponse(filename: string, rows: Array<Array<string | number | null 
     });
 }
 
-function madridDate(value: string): string {
-    return new Intl.DateTimeFormat("sv-SE", {
-        timeZone: "Europe/Madrid",
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-    }).format(new Date(value));
-}
-
-function madridTime(value: string): string {
-    return new Intl.DateTimeFormat("en-GB", {
-        timeZone: "Europe/Madrid",
-        hour: "2-digit",
-        minute: "2-digit",
-        hourCycle: "h23",
-    }).format(new Date(value));
-}
-
 export async function GET(request: Request) {
-    const sessionClient = await createSupabaseServerClient();
-    const { data: { user } } = await sessionClient.auth.getUser();
-    if (!user) return NextResponse.json({ error: "Inicia sesión para continuar." }, { status: 401 });
-
-    const adminClient = createSupabaseAdminClient();
-    const { data: profile, error: profileError } = await adminClient
-        .from("perfiles").select("rol").eq("id", user.id).single();
-    if (profileError || profile?.rol !== "admin") {
-        return NextResponse.json({ error: "Se requiere el rol de administrador." }, { status: 403 });
-    }
+    const authorization = await requireAdmin();
+    if ("response" in authorization) return authorization.response;
+    const { adminClient } = authorization;
 
     try {
         const searchParams = new URL(request.url).searchParams;
         const type = searchParams.get("tipo");
-        const rawPhase = searchParams.get("fase") ?? "campeon_invierno";
-        if (!isCompetitionPhase(rawPhase)) throw new Error("Fase de competición no válida.");
-        const phase: CompetitionPhase = rawPhase;
-        const group = (searchParams.get("grupo") ?? "").trim();
-        if (group.length > 80) throw new Error("El grupo no puede superar 80 caracteres.");
+        const competition = await loadAdminCompetition(adminClient, searchParams.get("competicion"));
+        if (!competition) return NextResponse.json({ error: "Competición no válida." }, { status: 400 });
+        const { season: SEASON, phase, group } = competition;
+        const fileSuffix = `${competition.slug}-${SEASON}`;
         if (!["resultados", "convocatoria", "estadisticas"].includes(type ?? "")) {
             return NextResponse.json({ error: "Tipo de plantilla no válido." }, { status: 400 });
         }
@@ -95,8 +68,14 @@ export async function GET(request: Request) {
                 .order("jornada").order("equipo_local");
             if (error) throw new Error("No se pudieron consultar los partidos de la competición.");
             const matches = data ?? [];
-            if (!matches.length) throw new Error("No hay calendario de esta competición y grupo cargado en Supabase.");
-            return csvResponse(`resultados-${competitionSlug(phase)}-${SEASON}.csv`, [
+            // Competición nueva sin calendario: plantilla vacía con códigos de equipo para cargarlo.
+            if (!matches.length) {
+                return csvResponse(`calendario-${fileSuffix}.csv`, [
+                    ["temporada", "jornada", "codigo_local", "codigo_visitante", "goles_local", "goles_visitante"],
+                    [SEASON, 1, "", "", "", ""],
+                ]);
+            }
+            return csvResponse(`resultados-${fileSuffix}.csv`, [
                 ["temporada", "jornada", "equipo_local", "equipo_visitante", "goles_local", "goles_visitante"],
                 ...matches.map((match) => [SEASON, match.jornada, match.equipo_local, match.equipo_visitante, match.goles_local, match.goles_visitante]),
             ]);
@@ -108,7 +87,7 @@ export async function GET(request: Request) {
             .order("jornada");
         if (fixtureError) throw new Error("No se pudieron consultar los partidos del Bayern.");
         const fixtures = ((fixtureData ?? []) as Fixture[])
-            .filter((fixture) => fixture.equipo_local === FEATURED_TEAM || fixture.equipo_visitante === FEATURED_TEAM);
+            .filter(isFeaturedMatch);
         if (!fixtures.length) throw new Error("No hay partidos del Bayern cargados para esta competición y grupo.");
 
         const { data: roster, error: rosterError } = await adminClient.from("jugadores")
@@ -123,7 +102,7 @@ export async function GET(request: Request) {
             if (error) throw new Error("No se pudieron consultar las convocatorias existentes.");
             const savedCallups = new Map((callups ?? []).map((callup) => [`${callup.partido_id}|${callup.jugador_id}`, callup.convocado]));
             const publishedCallupFixtures = new Set((callups ?? []).map((callup) => callup.partido_id));
-            return csvResponse(`convocatoria-${competitionSlug(phase)}-${SEASON}.csv`, [
+            return csvResponse(`convocatoria-${fileSuffix}.csv`, [
                 ["temporada", "jornada", "equipo_local", "equipo_visitante", "fecha_prevista", "fecha", "hora", "campo", "jugador_id", "nombre", "convocado"],
                 ...fixtures.flatMap((fixture) => roster.map((player, playerIndex) => {
                     const callupKey = `${fixture.id}|${player.id}`;
@@ -149,7 +128,7 @@ export async function GET(request: Request) {
             .in("partido_id", fixtureIds);
         if (statsError) throw new Error("No se pudieron consultar las estadísticas existentes.");
         const savedStats = new Map((stats ?? []).map((stat) => [`${stat.partido_id}|${stat.jugador_id}`, stat]));
-        return csvResponse(`estadisticas-${competitionSlug(phase)}-${SEASON}.csv`, [
+        return csvResponse(`estadisticas-${fileSuffix}.csv`, [
             ["temporada", "jornada", "equipo_local", "equipo_visitante", "jugador_id", "nombre", ...STAT_COLUMNS],
             ...fixtures.flatMap((fixture) => roster.map((player) => {
                 const current = savedStats.get(`${fixture.id}|${player.id}`);

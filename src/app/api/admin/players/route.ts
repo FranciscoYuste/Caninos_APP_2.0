@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { parsePlayerRosterCsv } from "@/lib/imports/parse-player-roster";
-import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { requireAdmin } from "@/lib/supabase/require-admin";
 
 export const runtime = "nodejs";
 
@@ -9,22 +8,8 @@ function escapeCsv(value: string | number | null): string {
     return `"${String(value ?? "").replace(/"/g, '""')}"`;
 }
 
-async function getAdminClient() {
-    const sessionClient = await createSupabaseServerClient();
-    const { data: { user } } = await sessionClient.auth.getUser();
-    if (!user) return { response: NextResponse.json({ error: "Inicia sesión para continuar." }, { status: 401 }) };
-
-    const adminClient = createSupabaseAdminClient();
-    const { data: profile, error: profileError } = await adminClient
-        .from("perfiles").select("rol").eq("id", user.id).single();
-    if (profileError || profile?.rol !== "admin") {
-        return { response: NextResponse.json({ error: "Se requiere el rol de administrador." }, { status: 403 }) };
-    }
-    return { adminClient };
-}
-
 export async function GET() {
-    const authorization = await getAdminClient();
+    const authorization = await requireAdmin();
     if ("response" in authorization) return authorization.response;
     const { adminClient } = authorization;
 
@@ -50,7 +35,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
     try {
-        const authorization = await getAdminClient();
+        const authorization = await requireAdmin();
         if ("response" in authorization) return authorization.response;
         const { adminClient } = authorization;
 

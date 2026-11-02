@@ -103,7 +103,7 @@ export function AdminInjuryManager({ players }: { players: InjuryPlayer[] }) {
                                     className="w-full resize-y border border-[var(--line)] bg-[var(--ink)] px-3 py-2 text-xs leading-5 text-white placeholder:text-[var(--muted)] focus:border-[var(--lime)] focus:outline-none"
                                 />
                                 <div className="mt-2 flex items-center justify-between gap-3">
-                                    <span className="text-[9px] text-[var(--muted)]">{description.length}/240</span>
+                                    <span className="text-[10px] text-[var(--muted)]">{description.length}/240</span>
                                     <button
                                         type="button"
                                         disabled={state.busy || description.trim() === savedDescription}
