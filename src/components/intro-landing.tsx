@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowUpRight, CircleAlert, RotateCcw } from "lucide-react";
+import { ACTIVE_SEASON } from "@/lib/config";
 
 export function IntroLanding() {
     const [isMobile, setIsMobile] = useState(false);
@@ -33,7 +34,7 @@ export function IntroLanding() {
         <>
             <main className="intro-desktop" aria-label="Portada Bayern D.L.Caninos">
                 <div className="intro-desktop-content">
-                    <p className="intro-desktop-kicker">Bayern D.L.Caninos · Temporada 2026–2027</p>
+                    <p className="intro-desktop-kicker">Bayern D.L.Caninos · Temporada {ACTIVE_SEASON.replace("-", "–")}</p>
                     <h1>Un equipo.<br /><span>Dos rodillas sanas.</span></h1>
                     <p className="intro-desktop-description">Sigue al equipo, consulta la clasificación, los partidos y las estadísticas de la temporada.</p>
                     <div className="intro-desktop-actions">

@@ -1,3 +1,5 @@
+import { ACTIVE_SEASON } from "@/lib/config";
+
 export type ImportedMatch = {
     jornada: number;
     fecha: string | null;
@@ -10,7 +12,7 @@ export type ImportedMatch = {
 
 export type JornadaImport = { temporada: string; partidos: ImportedMatch[] };
 
-export const DEFAULT_SEASON = "2026-2027";
+export const DEFAULT_SEASON = ACTIVE_SEASON;
 
 export const TEAM_CODES: Record<string, string> = {
     TOR: "Torrejon United",

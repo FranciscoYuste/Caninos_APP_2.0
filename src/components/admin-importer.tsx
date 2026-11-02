@@ -6,6 +6,7 @@ import { ArrowLeft, Check, FileUp } from "lucide-react";
 import { AdminKatsuManager } from "@/components/admin-katsu-manager";
 import { AdminInjuryManager } from "@/components/admin-injury-manager";
 import { AdminMatchChronicleManager } from "@/components/admin-match-chronicle-manager";
+import { ACTIVE_PHASE, ACTIVE_SEASON } from "@/lib/config";
 
 type KatsuMatch = { id: string; jornada: number; home: string; away: string; score: string | null; playerId: string | null };
 type KatsuPlayer = { id: string; name: string; number: number | null };
@@ -132,17 +133,17 @@ export function AdminImporter({ katsuMatches, katsuPlayers, injuryPlayers, chron
 
             <details open className="mt-8 border border-[var(--lime)]/50 bg-[var(--panel)]">
                 <summary className="cursor-pointer list-none px-5 py-5 text-lg font-black uppercase marker:hidden sm:px-7">
-                    Liga de invierno <span className="ml-2 text-[10px] font-bold tracking-[0.12em] text-[var(--lime)]">ACTIVA · 2026-2027</span>
+                    Liga de invierno <span className="ml-2 text-[10px] font-bold tracking-[0.12em] text-[var(--lime)]">ACTIVA · {ACTIVE_SEASON}</span>
                 </summary>
                 <div className="space-y-6 border-t border-[var(--line)] p-5 sm:p-7">
                 <details className="border border-[var(--line)]">
                 <summary className="cursor-pointer list-none p-4 text-base font-black uppercase marker:hidden">1. Resultados</summary>
                 <div className="border-t border-[var(--line)] p-4">
                 <p className="mt-2 text-sm leading-6 text-[var(--muted)]">Descarga la plantilla actualizada desde Supabase: contiene los 66 partidos y conserva los resultados ya importados. Cambia solo los marcadores que quieras actualizar; las celdas vacías no borran resultados anteriores.</p>
-                <a href="/api/admin/templates?tipo=resultados&fase=campeon_invierno" className="mt-4 inline-flex border border-[var(--lime)] px-4 py-3 text-xs font-bold uppercase text-[var(--lime)] hover:bg-[var(--lime)] hover:text-[var(--ink)]">Descargar plantilla actualizada</a>
+                <a href={`/api/admin/templates?tipo=resultados&fase=${ACTIVE_PHASE}`} className="mt-4 inline-flex border border-[var(--lime)] px-4 py-3 text-xs font-bold uppercase text-[var(--lime)] hover:bg-[var(--lime)] hover:text-[var(--ink)]">Descargar plantilla actualizada</a>
                 <form onSubmit={submitResults} className="mt-5">
                     <label htmlFor="archivo-resultados" className="mb-2 block text-xs font-semibold">Archivo de resultados (CSV o JSON)</label>
-                    <input type="hidden" name="fase" value="campeon_invierno" />
+                    <input type="hidden" name="fase" value={ACTIVE_PHASE} />
                     <input type="hidden" name="grupo" value="" />
                     <input id="archivo-resultados" name="archivo" type="file" accept=".json,.csv,application/json,text/csv" required className="block w-full cursor-pointer border border-[var(--line)] bg-[var(--ink)] p-3 text-xs text-[var(--muted)] file:mr-4 file:border-0 file:bg-[var(--lime)] file:px-3 file:py-2 file:text-xs file:font-bold file:text-[var(--ink)]" />
                     <p className="mt-2 text-[10px] text-[var(--muted)]">Edita la plantilla con Excel y guárdala como CSV UTF-8 antes de subirla · máximo 5 MB</p>
@@ -157,11 +158,11 @@ export function AdminImporter({ katsuMatches, katsuPlayers, injuryPlayers, chron
                 <div className="border-t border-[var(--line)] p-4">
                 <p className="mt-2 text-sm leading-6 text-[var(--muted)]">Puedes cargar las convocatorias semana a semana, aunque aún no se conozcan la fecha, la hora o el campo: la fecha prevista es solo informativa y no se convierte en horario confirmado. En la columna «convocado», marca sí/no para cada jugador de la jornada; las filas vacías conservan su estado anterior. Cuando se confirme, añade fecha y hora definitivas juntas y el campo una sola vez por partido. Una carga posterior conserva el horario confirmado si esos campos se dejan vacíos.</p>
                 <div className="mt-4 flex flex-wrap gap-3">
-                    <a href="/api/admin/templates?tipo=convocatoria&fase=campeon_invierno" className="inline-flex border border-[var(--lime)] px-4 py-3 text-xs font-bold uppercase text-[var(--lime)] hover:bg-[var(--lime)] hover:text-[var(--ink)]">Descargar plantilla actualizada</a>
+                    <a href={`/api/admin/templates?tipo=convocatoria&fase=${ACTIVE_PHASE}`} className="inline-flex border border-[var(--lime)] px-4 py-3 text-xs font-bold uppercase text-[var(--lime)] hover:bg-[var(--lime)] hover:text-[var(--ink)]">Descargar plantilla actualizada</a>
                 </div>
                 <form onSubmit={submitCallups} className="mt-5">
                     <label htmlFor="archivo-convocatoria" className="mb-2 block text-xs font-semibold">Archivo de convocatoria (CSV)</label>
-                    <input type="hidden" name="fase" value="campeon_invierno" />
+                    <input type="hidden" name="fase" value={ACTIVE_PHASE} />
                     <input type="hidden" name="grupo" value="" />
                     <input id="archivo-convocatoria" name="archivo" type="file" accept=".csv,text/csv" required className="block w-full cursor-pointer border border-[var(--line)] bg-[var(--ink)] p-3 text-xs text-[var(--muted)] file:mr-4 file:border-0 file:bg-[var(--lime)] file:px-3 file:py-2 file:text-xs file:font-bold file:text-[var(--ink)]" />
                     <p className="mt-2 text-[10px] text-[var(--muted)]">CSV UTF-8 · máximo 5 MB · solo existe «convocado» sí/no; puedes dejar jornadas sin rellenar</p>
@@ -175,10 +176,10 @@ export function AdminImporter({ katsuMatches, katsuPlayers, injuryPlayers, chron
                 <div className="border-t border-[var(--line)] p-4">
                 <p className="mt-2 text-sm leading-6 text-[var(--muted)]">Después de importar la convocatoria, descarga la plantilla actualizada. Incluye jugadores y estadísticas ya guardadas para cada partido del Bayern. Completa estadísticas solo para jugadores convocados que tengan datos; un convocado puede tener una fila de estadísticas o no tenerla. Deja todas las columnas vacías si no hay estadísticas que registrar. Las filas con todo a cero también se consideran sin datos.</p>
                 <p className="mt-2 text-xs leading-5 text-[var(--muted)]">Al reimportar, para cada partido incluido se sustituye el detalle por lo que indique el archivo. Descarga una plantilla nueva antes de editar para conservar los datos anteriores; las estadísticas de los demás partidos no cambian.</p>
-                <a href="/api/admin/templates?tipo=estadisticas&fase=campeon_invierno" className="mt-4 inline-flex border border-[var(--lime)] px-4 py-3 text-xs font-bold uppercase text-[var(--lime)] hover:bg-[var(--lime)] hover:text-[var(--ink)]">Descargar plantilla actualizada</a>
+                <a href={`/api/admin/templates?tipo=estadisticas&fase=${ACTIVE_PHASE}`} className="mt-4 inline-flex border border-[var(--lime)] px-4 py-3 text-xs font-bold uppercase text-[var(--lime)] hover:bg-[var(--lime)] hover:text-[var(--ink)]">Descargar plantilla actualizada</a>
                 <form onSubmit={submitPlayerStats} className="mt-5">
                     <label htmlFor="archivo-estadisticas" className="mb-2 block text-xs font-semibold">Archivo de estadísticas (CSV)</label>
-                    <input type="hidden" name="fase" value="campeon_invierno" />
+                    <input type="hidden" name="fase" value={ACTIVE_PHASE} />
                     <input type="hidden" name="grupo" value="" />
                     <input id="archivo-estadisticas" name="archivo" type="file" accept=".csv,text/csv" required className="block w-full cursor-pointer border border-[var(--line)] bg-[var(--ink)] p-3 text-xs text-[var(--muted)] file:mr-4 file:border-0 file:bg-[var(--lime)] file:px-3 file:py-2 file:text-xs file:font-bold file:text-[var(--ink)]" />
                     <p className="mt-2 text-[10px] text-[var(--muted)]">Edita en Excel y guarda como CSV UTF-8 · máximo 5 MB</p>

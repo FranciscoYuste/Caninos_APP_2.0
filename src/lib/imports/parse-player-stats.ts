@@ -1,3 +1,4 @@
+import { FEATURED_TEAM } from "@/lib/config";
 import { DEFAULT_SEASON, parseCsvRows, TEAM_CODES } from "@/lib/imports/parse-jornada";
 
 type PlayerMatchStatistics = {
@@ -72,8 +73,8 @@ export function parsePlayerStatsCsv(text: string): PlayerStatsImport {
         if (!Number.isInteger(jornada) || jornada < 1) throw new Error("jornada debe ser un entero mayor que cero.");
         const home = teamName(row, "codigo_local", "equipo_local");
         const away = teamName(row, "codigo_visitante", "equipo_visitante");
-        if (home !== "Bayern D.L.Caninos" && away !== "Bayern D.L.Caninos") {
-            throw new Error("Las estadísticas de esta plantilla solo admiten partidos del Bayern D.L.Caninos.");
+        if (home !== FEATURED_TEAM && away !== FEATURED_TEAM) {
+            throw new Error(`Las estadísticas de esta plantilla solo admiten partidos del ${FEATURED_TEAM}.`);
         }
         const currentSeason = String(row.temporada ?? "").trim() || DEFAULT_SEASON;
         if (season !== undefined && currentSeason !== season) throw new Error("Un archivo debe contener una sola temporada.");

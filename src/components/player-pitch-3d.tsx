@@ -256,6 +256,8 @@ function PitchScene({ playersByRole, roles, onSelect }: Pick<PlayerPitch3DProps,
     // Textura cacheada por useLoader: sin clone ni dispose
     const fieldMap = useLoader(TextureLoader, "/fotos/Campo.jpg");
     useEffect(() => {
+        // Las texturas de three.js son objetos mutables por diseño
+        // eslint-disable-next-line react-hooks/immutability
         fieldMap.colorSpace = SRGBColorSpace;
         fieldMap.needsUpdate = true;
     }, [fieldMap]);
@@ -295,7 +297,9 @@ export const PlayerPitch3D = memo(function PlayerPitch3D({
 }: PlayerPitch3DProps) {
     const [mounted, setMounted] = useState(false);
     const onReadyRef = useRef(onReady);
-    onReadyRef.current = onReady;
+    useEffect(() => {
+        onReadyRef.current = onReady;
+    }, [onReady]);
 
     // Monta el Canvas un frame después, fuera del render que cambia de vista
     useEffect(() => {

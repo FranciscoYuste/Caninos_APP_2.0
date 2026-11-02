@@ -6,8 +6,11 @@ export const metadata: Metadata = {
     description: "Plantilla, calendario, resultados y estadísticas de Bayern D.L.Caninos.",
     manifest: "/site.webmanifest",
     icons: {
-        icon: [{ url: "/fotos/escudo.png", type: "image/png", sizes: "1280x1280" }],
-        apple: [{ url: "/fotos/escudo.png", type: "image/png", sizes: "1280x1280" }],
+        icon: [
+            { url: "/fotos/escudo-192.png", type: "image/png", sizes: "192x192" },
+            { url: "/fotos/escudo-512.png", type: "image/png", sizes: "512x512" },
+        ],
+        apple: [{ url: "/fotos/escudo-192.png", type: "image/png", sizes: "192x192" }],
     },
 };
 

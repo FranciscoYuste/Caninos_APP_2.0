@@ -1,8 +1,7 @@
 import { TeamDashboard } from "@/components/team-dashboard";
 import type { KatsuCard, MatchItem, Player, RoundMatchItem, Standing } from "@/components/team-dashboard";
+import { ACTIVE_PHASE, ACTIVE_SEASON, FEATURED_TEAM, isFeaturedMatch } from "@/lib/config";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-
-const FEATURED_TEAM = "Bayern D.L.Caninos";
 
 type PlayerRecord = {
     id: string; nombre: string; posicion: string; dorsal: number | null; foto_url: string | null; video_url: string | null; lesionado: boolean; descripcion_lesion: string | null;
@@ -47,13 +46,13 @@ export default async function TeamPage() {
 
     try {
         const supabase = await createSupabaseServerClient();
-        const temporada = "2026-2027";
+        const temporada = ACTIVE_SEASON;
         const [playerResult, matchResult, tableResult, callupResult, statsResult] = await Promise.all([
             supabase.from("jugadores").select("id,nombre,posicion,dorsal,foto_url,video_url,lesionado,descripcion_lesion").eq("activo", true).order("dorsal", { nullsFirst: false }),
-            supabase.from("partidos").select("id,jornada,fecha,fecha_prevista,campo,equipo_local,equipo_visitante,goles_local,goles_visitante,estado,foto_convocatoria_url,jugador_katsu_id,cronica").eq("temporada", temporada).eq("fase", "campeon_invierno").order("fecha_prevista"),
-            supabase.from("clasificacion").select("equipo,posicion,jugados,ganados,empatados,perdidos,goles_favor,goles_contra,diferencia,puntos").eq("temporada", temporada).eq("fase", "campeon_invierno").eq("grupo", "").order("posicion"),
-            supabase.from("convocatorias").select("partido_id,jugador_id,convocado,partidos!inner(temporada,fase)").eq("partidos.temporada", temporada).eq("partidos.fase", "campeon_invierno"),
-            supabase.from("estadisticas").select("jugador_id,goles,asistencias,penaltis_marcados,penaltis_tirados,dobles_penaltis_marcados,dobles_penaltis_tirados,faltas_directas_marcadas,amarillas,rojas,partidos!inner(jornada,fecha,fecha_prevista,equipo_local,equipo_visitante,temporada,fase)").eq("partidos.temporada", temporada).eq("partidos.fase", "campeon_invierno"),
+            supabase.from("partidos").select("id,jornada,fecha,fecha_prevista,campo,equipo_local,equipo_visitante,goles_local,goles_visitante,estado,foto_convocatoria_url,jugador_katsu_id,cronica").eq("temporada", temporada).eq("fase", ACTIVE_PHASE).order("fecha_prevista"),
+            supabase.from("clasificacion").select("equipo,posicion,jugados,ganados,empatados,perdidos,goles_favor,goles_contra,diferencia,puntos").eq("temporada", temporada).eq("fase", ACTIVE_PHASE).eq("grupo", "").order("posicion"),
+            supabase.from("convocatorias").select("partido_id,jugador_id,convocado,partidos!inner(temporada,fase)").eq("partidos.temporada", temporada).eq("partidos.fase", ACTIVE_PHASE),
+            supabase.from("estadisticas").select("jugador_id,goles,asistencias,penaltis_marcados,penaltis_tirados,dobles_penaltis_marcados,dobles_penaltis_tirados,faltas_directas_marcadas,amarillas,rojas,partidos!inner(jornada,fecha,fecha_prevista,equipo_local,equipo_visitante,temporada,fase)").eq("partidos.temporada", temporada).eq("partidos.fase", ACTIVE_PHASE),
         ]);
         const queryErrors = [
             { table: "jugadores", error: playerResult.error },
@@ -116,7 +115,8 @@ export default async function TeamPage() {
                     penalties: `${record.penaltis_marcados}/${record.penaltis_tirados}`,
                     doublePenalties: `${record.dobles_penaltis_marcados}/${record.dobles_penaltis_tirados}`,
                     directFreeKicks: record.faltas_directas_marcadas,
-                    cards: `${record.amarillas}A ${record.rojas}R`,
+                    yellowCards: record.amarillas,
+                    redCards: record.rojas,
                 });
                 matchStats.set(record.jugador_id, detail);
             }
@@ -131,8 +131,6 @@ export default async function TeamPage() {
         }
         const squad: Player[] = ((playerResult.data ?? []) as unknown as PlayerRecord[]).map((player) => {
             const totals = seasonStats.get(player.id);
-            const yellow = totals?.amarillas ?? 0;
-            const red = totals?.rojas ?? 0;
             return {
                 id: player.id,
                 name: player.nombre,
@@ -143,7 +141,8 @@ export default async function TeamPage() {
                 goals: totals?.goles ?? 0,
                 assists: totals?.asistencias ?? 0,
                 games: callupCounts.get(player.id) ?? 0,
-                cards: `${yellow}A ${red}R`,
+                yellowCards: totals?.amarillas ?? 0,
+                redCards: totals?.rojas ?? 0,
                 penalties: `${totals?.penaltis_marcados ?? 0}/${totals?.penaltis_tirados ?? 0}`,
                 doublePenalties: `${totals?.dobles_penaltis_marcados ?? 0}/${totals?.dobles_penaltis_tirados ?? 0}`,
                 directFreeKicks: totals?.faltas_directas_marcadas ?? 0,
@@ -163,7 +162,7 @@ export default async function TeamPage() {
         }));
         const now = Date.now();
         const results: MatchItem[] = (matchResult.data ?? [])
-            .filter((match) => match.equipo_local === FEATURED_TEAM || match.equipo_visitante === FEATURED_TEAM)
+            .filter(isFeaturedMatch)
             .map((match) => {
                 const confirmedDate = match.fecha ? new Date(match.fecha) : null;
                 const upcoming = confirmedDate
@@ -195,7 +194,7 @@ export default async function TeamPage() {
             });
         const playerById = new Map(squad.map((player) => [player.id, player]));
         const katsuCards: KatsuCard[] = (matchResult.data ?? [])
-            .filter((match) => match.equipo_local === FEATURED_TEAM || match.equipo_visitante === FEATURED_TEAM)
+            .filter(isFeaturedMatch)
             .flatMap((match) => {
                 const player = match.jugador_katsu_id ? playerById.get(match.jugador_katsu_id) : undefined;
                 if (!player) return [];

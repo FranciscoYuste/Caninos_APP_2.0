@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { Activity, Ambulance, ArrowUpRight, CalendarDays, ClipboardList, Cross, Shield, Star, Trophy, Users, X } from "lucide-react";
 import { PlayerField } from "@/components/player-field";
+import { ACTIVE_SEASON, ACTIVE_SEASON_LABEL, FEATURED_TEAM } from "@/lib/config";
 
 export type Player = {
     id: string;
@@ -13,7 +14,8 @@ export type Player = {
     goals: number;
     assists: number;
     games: number;
-    cards: string;
+    yellowCards: number;
+    redCards: number;
     penalties: string;
     doublePenalties: string;
     directFreeKicks: number;
@@ -21,7 +23,7 @@ export type Player = {
     injuryDescription?: string | null;
     photo?: string | null;
     video?: string | null;
-    matchStats?: Array<{ label: string; goals: number; assists: number; penalties: string; doublePenalties: string; directFreeKicks: number; cards: string }>;
+    matchStats?: Array<{ label: string; goals: number; assists: number; penalties: string; doublePenalties: string; directFreeKicks: number; yellowCards: number; redCards: number }>;
 };
 export type MatchItem = { key: string; jornada: number; date: string; home: string; away: string; score: string; chronicle: string | null; finalScore?: string | null; status: string; callupPhotoUrl?: string | null; callups?: Array<{ name: string; calledUp: boolean }> };
 export type RoundMatchItem = { key: string; jornada: number; home: string; away: string; score: string };
@@ -47,10 +49,10 @@ function KatsuPlayerCard({ card }: { card: KatsuCard }) {
                     <span className="katsu-card-orbit katsu-card-orbit-inner pointer-events-none absolute -right-7 top-21 size-36 rounded-full border border-[var(--lime)]/20" />
                     <span className="pointer-events-none absolute -left-16 top-1/3 h-px w-[150%] rotate-[-28deg] bg-gradient-to-r from-transparent via-[var(--lime)]/20 to-transparent" />
                     <span className="relative flex items-center justify-between text-xs font-bold uppercase tracking-[0.14em] text-[var(--lime)] sm:text-xs sm:tracking-[0.2em]">
-                        <span>Temporada 2026—2027</span><Star size={21} fill="currentColor" />
+                        <span>Temporada {ACTIVE_SEASON_LABEL}</span><Star size={21} fill="currentColor" />
                     </span>
                     <span className="relative mt-2 flex justify-center">
-                        <Image src="/fotos/escudo.png" alt="Escudo de Bayern D.L. Caninos" width={76} height={76} className="size-[4.5rem] object-contain drop-shadow-[0_0_12px_#f2cf1870] sm:size-20" />
+                        <Image src="/fotos/escudo-256.png" alt="Escudo de Bayern D.L. Caninos" width={76} height={76} className="size-[4.5rem] object-contain drop-shadow-[0_0_12px_#f2cf1870] sm:size-20" />
                     </span>
                     <span className="relative my-auto flex flex-col items-center text-center">
                         <span className="text-6xl font-black uppercase leading-[0.9] tracking-[-0.06em] text-white sm:text-6xl">Jugador</span>
@@ -74,7 +76,7 @@ function KatsuPlayerCard({ card }: { card: KatsuCard }) {
                         <span className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#111311] via-transparent to-black/20" />
                         <span className="player-card-number absolute left-2 top-3 font-sans text-7xl font-black italic leading-[0.75] sm:left-3 sm:text-6xl">{card.player.number ?? "—"}</span>
                         <span className="player-card-crest absolute right-2 top-2 sm:right-3 sm:top-3">
-                            <Image src="/fotos/escudo.png" alt="Escudo de Bayern D.L. Caninos" width={80} height={80} className="size-16 object-contain drop-shadow-lg sm:size-20" />
+                            <Image src="/fotos/escudo-256.png" alt="Escudo de Bayern D.L. Caninos" width={80} height={80} className="size-16 object-contain drop-shadow-lg sm:size-20" />
                         </span>
                         <span className="absolute inset-x-0 bottom-0 px-4 pb-5 pt-16 sm:px-5 sm:pb-6">
                             <span className="block text-[1.65rem] font-black uppercase leading-tight tracking-[0.08em] text-[var(--lime)] sm:text-lg sm:tracking-[0.12em]">Jugador KATSU · J{card.jornada}</span>
@@ -173,7 +175,7 @@ function PlayerCard({ player, index, featured = false }: { player: Player; index
                     {player.number ?? "—"}
                 </span>
                 <span className="player-card-crest absolute right-3 top-3">
-                    <Image src="/fotos/escudo.png" alt="Escudo de Bayern D.L. Caninos" width={80} height={80} className="size-20 object-contain" />
+                    <Image src="/fotos/escudo-256.png" alt="Escudo de Bayern D.L. Caninos" width={80} height={80} className="size-20 object-contain" />
                 </span>
                 {player.injured ? <span className="absolute right-4 top-24 z-[2] inline-flex items-center gap-1.5 border border-red-300/70 bg-red-950/85 px-2 py-1 text-[9px] font-black uppercase text-red-100"><Cross size={13} strokeWidth={3} /> Lesionado</span> : null}
                 <div className="player-card-caption absolute inset-x-0 bottom-0 px-4 pb-4 pt-14">
@@ -183,7 +185,7 @@ function PlayerCard({ player, index, featured = false }: { player: Player; index
             </div>
             <div className="player-card-stats p-4">
                 <div className="grid grid-cols-4 divide-x divide-white/15">
-                    {[{ value: player.goals, label: "GOL" }, { value: player.assists, label: "ASI" }, { value: player.games, label: "CONV." }, { value: player.cards, label: "TARJ." }].map((stat) => (
+                    {[{ value: player.goals, label: "GOL" }, { value: player.assists, label: "ASI" }, { value: player.games, label: "CONV." }, { value: `${player.yellowCards}A ${player.redCards}R`, label: "TARJ." }].map((stat) => (
                         <div key={stat.label} className="flex min-h-20 min-w-0 flex-col items-center justify-center gap-2 px-1 text-center">
                             <p className={`whitespace-nowrap font-mono text-2xl font-black leading-none tabular-nums text-white ${stat.label === "TARJ." ? "md:text-base md:tracking-[-0.08em] lg:text-lg" : "sm:text-3xl"}`}>{stat.value}</p>
                             <p className="whitespace-nowrap text-[8px] font-bold tracking-[0.12em] text-[var(--muted)]">{stat.label}</p>
@@ -203,7 +205,7 @@ function PlayerCard({ player, index, featured = false }: { player: Player; index
                                 <div key={match.label} className="border-l border-[var(--lime)]/50 pl-3 text-[10px] leading-5 text-[var(--muted)]">
                                     <p className="font-semibold text-white/80">{match.label}</p>
                                     <p>{match.goals} goles · {match.assists} asistencias · PEN {match.penalties} · DOBLES {match.doublePenalties}</p>
-                                    <p>Faltas directas {match.directFreeKicks} · {match.cards}</p>
+                                    <p>Faltas directas {match.directFreeKicks} · {match.yellowCards}A {match.redCards}R</p>
                                 </div>
                             ))}
                         </div>
@@ -247,7 +249,7 @@ export function TeamDashboard({ squad, table, results, roundMatches, katsuCards,
     const emptyMessage = dataState === "error"
         ? "No se pudieron cargar datos. Revisa la conexión y las migraciones de Supabase."
         : "Todavía no hay registros en Supabase.";
-    const teamPosition = table.find((team) => team.name === "Bayern D.L.Caninos")?.position;
+    const teamPosition = table.find((team) => team.name === FEATURED_TEAM)?.position;
     const nextMatch = results.find((match) => match.status === "next");
     const menuItems = [
         { id: "competition" as const, label: "Clasificación y partidos", icon: Trophy },
@@ -300,12 +302,11 @@ export function TeamDashboard({ squad, table, results, roundMatches, katsuCards,
         setCardTilt({ x: 0, y: 0 });
     };
     const totals = squad.reduce((sum, player) => {
-        const [yellow = "0", red = "0"] = player.cards.match(/\d+/g) ?? [];
         return {
             goals: sum.goals + player.goals,
             assists: sum.assists + player.assists,
-            yellowCards: sum.yellowCards + Number(yellow),
-            redCards: sum.redCards + Number(red),
+            yellowCards: sum.yellowCards + player.yellowCards,
+            redCards: sum.redCards + player.redCards,
         };
     }, { goals: 0, assists: 0, yellowCards: 0, redCards: 0 });
     const chartPlayers = (value: (player: Player) => number) => [...squad]
@@ -314,7 +315,7 @@ export function TeamDashboard({ squad, table, results, roundMatches, katsuCards,
     return (
         <main className="min-h-screen">
             <header className="flex min-h-[72px] flex-wrap items-center justify-between gap-3 border-b border-[var(--line)] px-5 py-3 sm:px-10">
-                <a href="#inicio" className="flex items-center gap-3" aria-label="Bayern D.L.Caninos, inicio"><Image src="/fotos/escudo.png" alt="" width={44} height={44} priority className="size-11 object-contain" /><span className="text-sm font-bold tracking-[0.08em]">Bayern D.L.Caninos</span></a>
+                <a href="#inicio" className="flex items-center gap-3" aria-label="Bayern D.L.Caninos, inicio"><Image src="/fotos/escudo-256.png" alt="" width={44} height={44} priority className="size-11 object-contain" /><span className="text-sm font-bold tracking-[0.08em]">Bayern D.L.Caninos</span></a>
                 <a href="/login?next=%2Fadmin" className="flex items-center gap-2 border border-[var(--line)] px-3 py-2 text-xs font-semibold hover:border-[var(--lime)]">Administración</a>
             </header>
 
@@ -323,7 +324,7 @@ export function TeamDashboard({ squad, table, results, roundMatches, katsuCards,
                 <div className="pointer-events-none absolute inset-0 z-10 bg-gradient-to-r from-[#111311]/90 via-[#111311]/65 to-[#111311]/35" />
                 <div className="relative z-20 mx-auto flex min-h-[300px] max-w-7xl items-center gap-2 px-4 py-6 sm:min-h-[360px] sm:gap-8 sm:px-10 sm:py-10">
                     <div className="min-w-0 flex-1 text-left">
-                        <p className="mb-3 flex items-center gap-1.5 text-[8px] font-bold uppercase tracking-[0.08em] text-[var(--lime)] sm:mb-4 sm:gap-2 sm:text-xs sm:tracking-[0.2em]"><span className="size-2 shrink-0 rounded-full bg-[var(--lime)]" /> Temporada 2026-2027 · {selectedCompetition.label}</p>
+                        <p className="mb-3 flex items-center gap-1.5 text-[8px] font-bold uppercase tracking-[0.08em] text-[var(--lime)] sm:mb-4 sm:gap-2 sm:text-xs sm:tracking-[0.2em]"><span className="size-2 shrink-0 rounded-full bg-[var(--lime)]" /> Temporada {ACTIVE_SEASON} · {selectedCompetition.label}</p>
                         <h1 className="text-[clamp(1.5rem,7vw,2.75rem)] font-black uppercase leading-[0.94] sm:text-7xl">Un equipo.<br /><span className="text-[var(--lime)]">Dos rodillas</span> sanas.</h1>
                         <div className="mt-5 flex flex-col items-start gap-3 sm:mt-8 sm:flex-row sm:flex-wrap sm:items-center sm:gap-6">
                             <button onClick={() => { setActiveMenu("competition"); document.getElementById("contenido")?.scrollIntoView({ behavior: "smooth" }); }} className="inline-flex items-center gap-1.5 whitespace-nowrap bg-[var(--lime)] px-2.5 py-3 text-[9px] font-black uppercase text-[var(--ink)] sm:gap-2 sm:px-4 sm:text-xs">Ver competición <ArrowUpRight size={14} className="sm:size-4" /></button>
@@ -331,7 +332,7 @@ export function TeamDashboard({ squad, table, results, roundMatches, katsuCards,
                         </div>
                     </div>
                     <div className="flex shrink-0 flex-col items-center gap-2 sm:flex-row sm:gap-6">
-                        <Image src="/fotos/escudo.png" alt="Escudo de Bayern D.L. Caninos" width={104} height={104} priority className="size-14 object-contain drop-shadow-lg sm:size-24" />
+                        <Image src="/fotos/escudo-256.png" alt="Escudo de Bayern D.L. Caninos" width={104} height={104} priority className="size-14 object-contain drop-shadow-lg sm:size-24" />
                         <div className="text-center sm:border-l sm:border-white/25 sm:pl-6 sm:text-right">
                             <p className="font-mono text-2xl font-bold sm:text-5xl">{activeCompetition === "winter" && teamPosition ? <>{teamPosition}<sup className="ml-0.5 text-[0.48em] text-[var(--lime)]">º</sup></> : "—"}</p>
                             <p className="mt-1 max-w-20 text-[7px] uppercase leading-tight tracking-[0.06em] text-white/65 sm:max-w-none sm:text-[10px] sm:tracking-[0.15em]">{activeCompetition === "winter" ? "en la tabla" : "clasificación pendiente"}</p>
@@ -371,7 +372,7 @@ export function TeamDashboard({ squad, table, results, roundMatches, katsuCards,
 
                 {activeMenu === "competition" ? (
                     <section id="liga" className="py-10">
-                        <div className="mb-8 flex flex-col items-center text-center"><p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--lime)]">Temporada 2026-2027 · Liga de invierno</p><h2 className="mt-2 text-3xl font-black uppercase sm:text-4xl">Clasificación</h2><Trophy className="mt-3 text-[var(--lime)]" /></div>
+                        <div className="mb-8 flex flex-col items-center text-center"><p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--lime)]">Temporada {ACTIVE_SEASON} · Liga de invierno</p><h2 className="mt-2 text-3xl font-black uppercase sm:text-4xl">Clasificación</h2><Trophy className="mt-3 text-[var(--lime)]" /></div>
                         <table className="w-full table-fixed border-collapse text-left text-[9px] sm:text-xs">
                             <colgroup>
                                 <col className="w-6 sm:w-12" />
@@ -391,7 +392,7 @@ export function TeamDashboard({ squad, table, results, roundMatches, katsuCards,
                                 <th className="text-center">GF</th><th className="text-center">GC</th><th className="text-center">DG</th><th className="pr-1 text-right sm:pr-2">PTS</th>
                             </tr></thead>
                             <tbody>{table.length ? table.map((team) => (
-                                <tr key={team.name} className={`border-b border-[var(--line)] ${team.name === "Bayern D.L.Caninos" ? "bg-[#f2cf1810] text-[var(--lime)]" : ""}`}>
+                                <tr key={team.name} className={`border-b border-[var(--line)] ${team.name === FEATURED_TEAM ? "bg-[#f2cf1810] text-[var(--lime)]" : ""}`}>
                                     <td className="py-4 pl-1 font-mono sm:pl-2">{String(team.position).padStart(2, "0")}</td>
                                     <td className="overflow-hidden px-1 font-semibold"><span className="block truncate">{team.name}</span></td>
                                     <td className="text-center font-mono">{team.played}</td><td className="text-center font-mono">{team.won}</td><td className="text-center font-mono">{team.drawn}</td><td className="text-center font-mono">{team.lost}</td>
@@ -474,15 +475,15 @@ export function TeamDashboard({ squad, table, results, roundMatches, katsuCards,
 
                 {activeMenu === "stats" ? (
                     <section className="py-10">
-                        <div className="mb-7 text-center"><p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--lime)]">Temporada 2026-2027 · Bayern D.L.Caninos</p><h2 className="mt-2 text-3xl font-black uppercase sm:text-4xl">Estadísticas generales</h2><p className="mx-auto mt-3 max-w-2xl text-sm leading-6 text-[var(--muted)]">Resumen de las estadísticas individuales importadas hasta ahora.</p></div>
+                        <div className="mb-7 text-center"><p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--lime)]">Temporada {ACTIVE_SEASON} · {FEATURED_TEAM}</p><h2 className="mt-2 text-3xl font-black uppercase sm:text-4xl">Estadísticas generales</h2><p className="mx-auto mt-3 max-w-2xl text-sm leading-6 text-[var(--muted)]">Resumen de las estadísticas individuales importadas hasta ahora.</p></div>
                         <div className="flex flex-wrap justify-center gap-3">
                             {[{ label: "Goles", value: totals.goals }, { label: "Asistencias", value: totals.assists }, { label: "Amarillas", value: totals.yellowCards }, { label: "Rojas", value: totals.redCards }].map((stat) => <div key={stat.label} className="w-[calc(50%-0.375rem)] border border-[var(--line)] bg-[var(--panel)] p-4 sm:w-[calc(33.333%-0.5rem)] lg:w-[calc(25%-0.5625rem)]"><p className="font-mono text-3xl font-bold text-[var(--lime)]">{stat.value}</p><p className="mt-2 text-[9px] font-bold uppercase tracking-[0.1em] text-[var(--muted)]">{stat.label}</p></div>)}
                         </div>
                         <div className="mt-5 flex flex-wrap justify-center gap-5">
                             <PlayerStatChart className="w-full lg:w-[calc(50%-0.625rem)]" title="Goles por jugador" color="bg-[var(--lime)]" players={chartPlayers((player) => player.goals)} />
                             <PlayerStatChart className="w-full lg:w-[calc(50%-0.625rem)]" title="Asistencias por jugador" color="bg-sky-400" players={chartPlayers((player) => player.assists)} />
-                            <PlayerStatChart className="w-full lg:w-[calc(50%-0.625rem)]" title="Tarjetas rojas por jugador" color="bg-rose-500" players={chartPlayers((player) => Number(player.cards.match(/\d+/g)?.[1] ?? 0))} />
-                            <PlayerStatChart className="w-full lg:w-[calc(50%-0.625rem)]" title="Tarjetas amarillas por jugador" color="bg-yellow-300" players={chartPlayers((player) => Number(player.cards.match(/\d+/g)?.[0] ?? 0))} />
+                            <PlayerStatChart className="w-full lg:w-[calc(50%-0.625rem)]" title="Tarjetas rojas por jugador" color="bg-rose-500" players={chartPlayers((player) => player.redCards)} />
+                            <PlayerStatChart className="w-full lg:w-[calc(50%-0.625rem)]" title="Tarjetas amarillas por jugador" color="bg-yellow-300" players={chartPlayers((player) => player.yellowCards)} />
                             <PlayerStatChart className="w-full lg:w-[calc(50%-0.625rem)]" title="Convocatorias por jugador" color="bg-[var(--lime)]" players={chartPlayers((player) => player.games)} />
                         </div>
                         {!squad.some((player) => player.goals || player.assists || player.games) ? <p className="mt-5 border border-dashed border-[var(--line)] p-4 text-xs text-[var(--muted)]">Aún no hay estadísticas importadas. Los gráficos se completarán automáticamente cuando se carguen convocatorias y estadísticas de partidos.</p> : null}
@@ -492,7 +493,7 @@ export function TeamDashboard({ squad, table, results, roundMatches, katsuCards,
                 {activeMenu === "katsu" ? (
                     <section className="py-10">
                         <div className="mb-8 text-center">
-                            <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-[var(--lime)]">Bayern D.L. Caninos · Temporada 2026—2027</p>
+                            <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-[var(--lime)]">{FEATURED_TEAM} · Temporada {ACTIVE_SEASON_LABEL}</p>
                             <h2 className="mt-2 text-4xl font-black uppercase sm:text-5xl">Jugador KATSU</h2>
                             <p className="mx-auto mt-3 max-w-2xl text-sm leading-6 text-[var(--muted)]">Un reconocimiento especial en cada partido. Pulsa la carta para descubrir quién se lleva la distinción.</p>
                         </div>
@@ -547,7 +548,7 @@ export function TeamDashboard({ squad, table, results, roundMatches, katsuCards,
                     </>
                 ) : (
                     <section className="mx-auto max-w-3xl py-16 text-center sm:py-24">
-                        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--lime)]">Temporada 2026-2027 · Próximamente</p>
+                        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--lime)]">Temporada {ACTIVE_SEASON} · Próximamente</p>
                         <h2 className="mt-3 text-3xl font-black uppercase sm:text-4xl">{activeCompetition === "promotion" ? "Liga de ascenso / descenso" : "Copa"}</h2>
                         <p className="mx-auto mt-4 max-w-2xl text-sm leading-6 text-[var(--muted)]">
                             {activeCompetition === "promotion"
@@ -558,7 +559,7 @@ export function TeamDashboard({ squad, table, results, roundMatches, katsuCards,
                     </section>
                 )}
             </div>
-            <footer className="flex flex-nowrap items-center justify-between gap-1.5 border-t border-[var(--line)] px-2 py-5 text-[7px] uppercase tracking-[0.01em] text-[var(--muted)] sm:gap-3 sm:px-10 sm:py-6 sm:text-[10px] sm:tracking-[0.12em]"><span className="whitespace-nowrap">Bayern D.L.Caninos. Creado para fumar en equipo.</span><span className="flex shrink-0 items-center gap-1 whitespace-nowrap sm:gap-3"><Image src="/fotos/CORONA MAS PUA.png" alt="" aria-hidden="true" width={42} height={42} className="footer-emblem-glow size-6 object-contain sm:size-9" /><span className="flex items-center gap-1 sm:gap-2"><Shield size={12} className="hidden sm:block" /><span className="hidden sm:inline">Temporada </span>2026-2027</span></span></footer>
+            <footer className="flex flex-nowrap items-center justify-between gap-1.5 border-t border-[var(--line)] px-2 py-5 text-[7px] uppercase tracking-[0.01em] text-[var(--muted)] sm:gap-3 sm:px-10 sm:py-6 sm:text-[10px] sm:tracking-[0.12em]"><span className="whitespace-nowrap">Bayern D.L.Caninos. Creado para fumar en equipo.</span><span className="flex shrink-0 items-center gap-1 whitespace-nowrap sm:gap-3"><Image src="/fotos/corona-96.png" alt="" aria-hidden="true" width={42} height={42} className="footer-emblem-glow size-6 object-contain sm:size-9" /><span className="flex items-center gap-1 sm:gap-2"><Shield size={12} className="hidden sm:block" /><span className="hidden sm:inline">Temporada </span>{ACTIVE_SEASON}</span></span></footer>
             {selectedChronicle ? (
                 <div
                     className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 sm:p-8"

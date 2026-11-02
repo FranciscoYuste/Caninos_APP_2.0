@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { AdminImporter } from "@/components/admin-importer";
+import { ACTIVE_PHASE, ACTIVE_SEASON, isFeaturedMatch } from "@/lib/config";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -16,8 +17,8 @@ export default async function AdminPage() {
         adminClient
             .from("partidos")
             .select("id,jornada,equipo_local,equipo_visitante,goles_local,goles_visitante,jugador_katsu_id,cronica")
-            .eq("temporada", "2026-2027")
-            .eq("fase", "campeon_invierno")
+            .eq("temporada", ACTIVE_SEASON)
+            .eq("fase", ACTIVE_PHASE)
             .order("jornada"),
         adminClient
             .from("jugadores")
@@ -34,7 +35,7 @@ export default async function AdminPage() {
         throw new Error("No se pudieron cargar los partidos y jugadores para administración.");
     }
     const katsuMatches = (matchResult.data ?? [])
-        .filter((match) => match.equipo_local === "Bayern D.L.Caninos" || match.equipo_visitante === "Bayern D.L.Caninos")
+        .filter(isFeaturedMatch)
         .map((match) => ({
             id: match.id,
             jornada: match.jornada,
@@ -46,14 +47,14 @@ export default async function AdminPage() {
             playerId: match.jugador_katsu_id,
         }));
     const chronicleMatches = (matchResult.data ?? [])
-        .filter((match) => match.equipo_local === "Bayern D.L.Caninos" || match.equipo_visitante === "Bayern D.L.Caninos")
+        .filter(isFeaturedMatch)
         .map((match) => ({
-        id: match.id,
-        jornada: match.jornada,
-        home: match.equipo_local,
-        away: match.equipo_visitante,
-        chronicle: match.cronica,
-    }));
+            id: match.id,
+            jornada: match.jornada,
+            home: match.equipo_local,
+            away: match.equipo_visitante,
+            chronicle: match.cronica,
+        }));
     const katsuPlayers = (playerResult.data ?? []).map((player) => ({
         id: player.id,
         name: player.nombre,

@@ -1,12 +1,10 @@
 import { NextResponse } from "next/server";
 import { competitionSlug, isCompetitionPhase, type CompetitionPhase } from "@/lib/competitions";
-import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { ACTIVE_PHASE, ACTIVE_SEASON as SEASON, isFeaturedMatch } from "@/lib/config";
+import { requireAdmin } from "@/lib/supabase/require-admin";
 
 export const runtime = "nodejs";
 
-const SEASON = "2026-2027";
-const FEATURED_TEAM = "Bayern D.L.Caninos";
 const STAT_COLUMNS = [
     "goles",
     "asistencias",
@@ -65,21 +63,14 @@ function madridTime(value: string): string {
 }
 
 export async function GET(request: Request) {
-    const sessionClient = await createSupabaseServerClient();
-    const { data: { user } } = await sessionClient.auth.getUser();
-    if (!user) return NextResponse.json({ error: "Inicia sesión para continuar." }, { status: 401 });
-
-    const adminClient = createSupabaseAdminClient();
-    const { data: profile, error: profileError } = await adminClient
-        .from("perfiles").select("rol").eq("id", user.id).single();
-    if (profileError || profile?.rol !== "admin") {
-        return NextResponse.json({ error: "Se requiere el rol de administrador." }, { status: 403 });
-    }
+    const authorization = await requireAdmin();
+    if ("response" in authorization) return authorization.response;
+    const { adminClient } = authorization;
 
     try {
         const searchParams = new URL(request.url).searchParams;
         const type = searchParams.get("tipo");
-        const rawPhase = searchParams.get("fase") ?? "campeon_invierno";
+        const rawPhase = searchParams.get("fase") ?? ACTIVE_PHASE;
         if (!isCompetitionPhase(rawPhase)) throw new Error("Fase de competición no válida.");
         const phase: CompetitionPhase = rawPhase;
         const group = (searchParams.get("grupo") ?? "").trim();
@@ -108,7 +99,7 @@ export async function GET(request: Request) {
             .order("jornada");
         if (fixtureError) throw new Error("No se pudieron consultar los partidos del Bayern.");
         const fixtures = ((fixtureData ?? []) as Fixture[])
-            .filter((fixture) => fixture.equipo_local === FEATURED_TEAM || fixture.equipo_visitante === FEATURED_TEAM);
+            .filter(isFeaturedMatch);
         if (!fixtures.length) throw new Error("No hay partidos del Bayern cargados para esta competición y grupo.");
 
         const { data: roster, error: rosterError } = await adminClient.from("jugadores")
