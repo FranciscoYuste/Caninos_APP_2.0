@@ -25,9 +25,12 @@ body {
     font-family: "Trebuchet MS", "Segoe UI", sans-serif;
 }
 
-button,
-input {
-    font: inherit;
+/* En la capa base para que las clases de tamaño de Tailwind (text-xs…) puedan sobrescribirlo. */
+@layer base {
+    button,
+    input {
+        font: inherit;
+    }
 }
 
 ::selection {

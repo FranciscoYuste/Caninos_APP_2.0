@@ -30,7 +30,7 @@ export function ShareButton({ path, title, text, className = "" }: { path: strin
         <button
             type="button"
             onClick={share}
-            className={`inline-flex min-h-10 items-center justify-center gap-2 border border-[var(--lime)]/50 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.1em] text-[var(--lime)] transition hover:bg-[var(--lime)] hover:text-[var(--ink)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--lime)] ${className}`}
+            className={`inline-flex min-h-10 items-center justify-center gap-2 border border-[var(--lime)]/50 px-3 py-2 text-xs font-bold uppercase tracking-[0.08em] text-[var(--lime)] transition hover:bg-[var(--lime)] hover:text-[var(--ink)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--lime)] ${className}`}
         >
             {copied ? <Check size={14} /> : <Share2 size={14} />}
             {copied ? "Enlace copiado" : "Compartir"}

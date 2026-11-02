@@ -41,9 +41,9 @@ export function StatsSection({ squad, season }: { squad: Player[]; season: strin
         return { value: best, names: best ? squad.filter((player) => value(player) === best).map((player) => player.name) : [] };
     };
     const highlights = [
-        { label: "Máximo goleador", unit: "goles", ...leader((player) => player.goals) },
-        { label: "Máximo asistente", unit: "asistencias", ...leader((player) => player.assists) },
-        { label: "Más convocado", unit: "convocatorias", ...leader((player) => player.games) },
+        { label: "Máximo goleador", unit: ["gol", "goles"], ...leader((player) => player.goals) },
+        { label: "Máximo asistente", unit: ["asistencia", "asistencias"], ...leader((player) => player.assists) },
+        { label: "Más convocado", unit: ["convocatoria", "convocatorias"], ...leader((player) => player.games) },
     ];
 
     return (
@@ -56,13 +56,17 @@ export function StatsSection({ squad, season }: { squad: Player[]; season: strin
                 {highlights.map((highlight) => (
                     <article key={highlight.label} className="flex items-center gap-4 border border-[var(--lime)]/40 bg-[var(--panel)] p-4">
                         <Medal className="shrink-0 text-[var(--lime)]" size={28} />
-                        <div className="min-w-0">
+                        <div className="min-w-0 flex-1">
                             <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-[var(--muted)]">{highlight.label}</p>
-                            <p className="mt-1 truncate text-base font-black uppercase" title={highlight.names.join(", ")}>
-                                {highlight.names.length ? highlight.names.slice(0, 3).join(" · ") : "—"}
-                                {highlight.names.length > 3 ? <span className="ml-1 text-xs text-[var(--muted)]">+{highlight.names.length - 3}</span> : null}
-                            </p>
-                            {highlight.value ? <p className="font-mono text-xs text-[var(--lime)]">{highlight.value} {highlight.unit}</p> : null}
+                            <p className="mt-1 text-base font-black uppercase leading-snug">{highlight.names.length ? highlight.names.slice(0, 3).join(" · ") : "—"}</p>
+                            {highlight.value ? <p className="font-mono text-xs text-[var(--lime)]">{highlight.value} {highlight.unit[highlight.value === 1 ? 0 : 1]}</p> : null}
+                            {/* Con muchos empates, el resto se despliega al tocar (funciona igual en móvil que con ratón). */}
+                            {highlight.names.length > 3 ? (
+                                <details className="mt-2 text-xs">
+                                    <summary className="cursor-pointer py-1 font-bold uppercase text-[var(--muted)]">+{highlight.names.length - 3} empatados más</summary>
+                                    <p className="mt-1 leading-5 text-white/80">{highlight.names.slice(3).join(" · ")}</p>
+                                </details>
+                            ) : null}
                         </div>
                     </article>
                 ))}
