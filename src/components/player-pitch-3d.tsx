@@ -21,9 +21,11 @@ type PlayerPitch3DProps = {
 
 type Slot = [number, number, number];
 
-const HOME_POSITION: Slot = [0, 8.5, 15.5];
+// Vista inicial: algo más alejada y centrada hacia nuestra portería para que el portero entre en pantalla.
+const HOME_POSITION: Slot = [0, 10, 17.5];
+const HOME_TARGET: Slot = [0, 0, 1];
 const HOME = new Vector3(...HOME_POSITION);
-const ORIGIN = new Vector3(0, 0, 0);
+const TARGET = new Vector3(...HOME_TARGET);
 
 type RowConfig = {
     z: number;        // profundidad de la fila (+ = hacia tu portería, - = hacia el rival)
@@ -36,7 +38,7 @@ type RowConfig = {
 };
 
 const FORMATION: Record<string, RowConfig> = {
-    goalkeeper:   { z: 6.3,  xMin: -2,   xMax: 2,    perRow: 3, maxGap: 2.4, rowGap: 1.8, zigzag: 0 },
+    goalkeeper:   { z: 5.9,  xMin: -2,   xMax: 2,    perRow: 3, maxGap: 2.4, rowGap: 1.8, zigzag: 0 },
     defender:     { z: 3.2,  xMin: -3.8, xMax: 3.8,  perRow: 4, maxGap: 2.6, rowGap: 2.2, zigzag: 0.5 },
     "left-wing":  { z: -0.8, xMin: -4.2, xMax: -1.4, perRow: 2, maxGap: 2.4, rowGap: 2.2, zigzag: 0.6 },
     "right-wing": { z: -0.8, xMin: 1.4,  xMax: 4.2,  perRow: 2, maxGap: 2.4, rowGap: 2.2, zigzag: 0.6 },
@@ -279,9 +281,9 @@ function CameraReset({ request }: { request: number }) {
     useFrame(() => {
         if (!animating.current || !controls) return;
         camera.position.lerp(HOME, 0.12);
-        controls.target.lerp(ORIGIN, 0.12);
+        controls.target.lerp(TARGET, 0.12);
         controls.update();
-        if (camera.position.distanceTo(HOME) < 0.02 && controls.target.length() < 0.01) animating.current = false;
+        if (camera.position.distanceTo(HOME) < 0.02 && controls.target.distanceTo(TARGET) < 0.01) animating.current = false;
     });
 
     return null;
@@ -365,7 +367,7 @@ export const PlayerPitch3D = memo(function PlayerPitch3D({
                         </Suspense>
                         <OrbitControls
                             makeDefault
-                            target={[0, 0, 0]}
+                            target={HOME_TARGET}
                             enableDamping
                             dampingFactor={0.08}
                             enablePan
