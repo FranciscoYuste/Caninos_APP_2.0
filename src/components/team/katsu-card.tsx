@@ -3,6 +3,8 @@
 import Image from "next/image";
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
 import { RotateCcw, Star } from "lucide-react";
+import { FramedPhoto } from "@/components/team/framed-media";
+import { KATSU_PHOTO_FRAME } from "@/lib/media-framing";
 import type { KatsuCard } from "@/lib/team-types";
 
 // Fases de la apertura del sobre; cada una añade una clase al escenario.
@@ -256,7 +258,7 @@ export function KatsuPlayerCard({ card }: { card: KatsuCard }) {
                         <div className="kpack-front-in">
                             <div className="kpack-photo">
                                 {card.player.photo
-                                    ? <Image src={card.player.photo} alt={`Foto de ${card.player.name}`} fill unoptimized sizes="340px" className="object-contain object-bottom" draggable={false} />
+                                    ? <FramedPhoto src={card.player.photo} alt={`Foto de ${card.player.name}`} frame={KATSU_PHOTO_FRAME} sizes="340px" />
                                     : <span className="kpack-initials">{initials(card.player.name)}</span>}
                             </div>
                             <div className="kpack-front-top">

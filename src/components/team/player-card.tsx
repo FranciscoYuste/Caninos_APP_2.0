@@ -1,9 +1,10 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useRef } from "react";
 import { Cross, Star } from "lucide-react";
+import { FramedPhoto, FramedVideo } from "@/components/team/framed-media";
 import { useCardSpin } from "@/components/team/use-card-spin";
+import { CARD_PHOTO_FRAME, CARD_VIDEO_FRAME } from "@/lib/media-framing";
 import type { Player } from "@/lib/team-types";
 
 const POSITION_CODES: Record<string, string> = {
@@ -16,36 +17,6 @@ const POSITION_CODES: Record<string, string> = {
 
 function initials(name: string): string {
     return name.split(" ").map((part) => part[0]).join("").slice(0, 3);
-}
-
-// Vídeo de la ficha: se reproduce una vez, sin sonido, y se queda en el último fotograma.
-function PlayerVideo({ player }: { player: Player }) {
-    const videoRef = useRef<HTMLVideoElement>(null);
-
-    useEffect(() => {
-        void videoRef.current?.play().catch((error: unknown) => {
-            console.error(`No se pudo reproducir el vídeo de ${player.name}.`, error);
-        });
-    }, [player.name]);
-
-    return (
-        <video
-            ref={videoRef}
-            className="h-full w-full object-cover object-top"
-            src={player.video ?? undefined}
-            muted
-            playsInline
-            autoPlay
-            preload="auto"
-            aria-label={`Vídeo de ${player.name}`}
-            onEnded={(event) => {
-                const video = event.currentTarget;
-                video.pause();
-                if (Number.isFinite(video.duration)) video.currentTime = Math.max(0, video.duration - 0.05);
-            }}
-            onError={(event) => console.error(`Error al cargar el vídeo de ${player.name}.`, event.currentTarget.error)}
-        />
-    );
 }
 
 function CardShine() {
@@ -85,9 +56,9 @@ export function PlayerCard({ player }: { player: Player }) {
                     <div className={`collect-face-in${player.video ? " has-video" : ""}`}>
                         <div className={player.video ? "collect-media collect-media-video" : "collect-media"}>
                             {player.video
-                                ? <PlayerVideo player={player} />
+                                ? <FramedVideo src={player.video} label={`vídeo de ${player.name}`} frame={CARD_VIDEO_FRAME} />
                                 : player.photo
-                                    ? <Image src={player.photo} alt={`Foto de ${player.name}`} fill unoptimized sizes="320px" className="object-contain object-bottom" draggable={false} />
+                                    ? <FramedPhoto src={player.photo} alt={`Foto de ${player.name}`} frame={CARD_PHOTO_FRAME} sizes="320px" />
                                     : <span className="collect-initials">{initials(player.name)}</span>}
                         </div>
                         <div className="collect-corner">

@@ -1,6 +1,6 @@
 "use client";
 
-import { Component, Suspense, memo, useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { Component, Suspense, memo, useCallback, useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import { Canvas, useFrame, useLoader, useThree } from "@react-three/fiber";
 import { Html, OrbitControls } from "@react-three/drei";
 import Image from "next/image";
@@ -82,13 +82,14 @@ class PlayerSceneErrorBoundary extends Component<{ onError: () => void; children
     }
 }
 
-function PlayerMarker({ player, position, onSelect }: {
+function PlayerMarker({ player, position, onSelect, layer }: {
     player: Player;
     position: Slot;
     onSelect: (player: Player) => void;
+    layer: RefObject<HTMLDivElement | null>;
 }) {
     return (
-        <Html position={position} center distanceFactor={10} zIndexRange={[20, 0]}>
+        <Html position={position} center distanceFactor={10} zIndexRange={[100, 0]} portal={layer as RefObject<HTMLElement>}>
             <button
                 type="button"
                 aria-label={`Ver ficha de ${player.name}, ${player.position}${player.injured ? ", lesionado" : ""}`}
@@ -289,7 +290,9 @@ function CameraReset({ request }: { request: number }) {
     return null;
 }
 
-function PitchScene({ playersByRole, roles, onSelect }: Pick<PlayerPitch3DProps, "playersByRole" | "roles" | "onSelect">) {
+function PitchScene({ playersByRole, roles, onSelect, markerLayer }: Pick<PlayerPitch3DProps, "playersByRole" | "roles" | "onSelect"> & {
+    markerLayer: RefObject<HTMLDivElement | null>;
+}) {
     // Textura cacheada por useLoader: sin clone ni dispose
     const fieldMap = useLoader(TextureLoader, "/fotos/Campo.jpg");
     useEffect(() => {
@@ -317,6 +320,7 @@ function PitchScene({ playersByRole, roles, onSelect }: Pick<PlayerPitch3DProps,
                         player={player}
                         position={slots[index]}
                         onSelect={onSelect}
+                        layer={markerLayer}
                     />
                 ));
             })}
@@ -334,6 +338,10 @@ export const PlayerPitch3D = memo(function PlayerPitch3D({
 }: PlayerPitch3DProps) {
     const [mounted, setMounted] = useState(false);
     const [resetRequest, setResetRequest] = useState(0);
+    // Capa fija para los marcadores. Sin ella, Html los cuelga del contenedor del canvas, que
+    // cambia justo después de montar: al volver a la sección (textura ya en caché) los marcadores
+    // se recreaban a mitad de render y el primero —el portero— se quedaba vacío.
+    const markerLayer = useRef<HTMLDivElement>(null);
     const onReadyRef = useRef(onReady);
     useEffect(() => {
         onReadyRef.current = onReady;
@@ -363,7 +371,7 @@ export const PlayerPitch3D = memo(function PlayerPitch3D({
                     >
                         <color attach="background" args={["#111711"]} />
                         <Suspense fallback={null}>
-                            <PitchScene playersByRole={playersByRole} roles={roles} onSelect={onSelect} />
+                            <PitchScene playersByRole={playersByRole} roles={roles} onSelect={onSelect} markerLayer={markerLayer} />
                         </Suspense>
                         <OrbitControls
                             makeDefault
@@ -381,6 +389,7 @@ export const PlayerPitch3D = memo(function PlayerPitch3D({
                     </Canvas>
                 </PlayerSceneErrorBoundary>
             ) : null}
+            <div ref={markerLayer} className="player-3d-markers" />
             {mounted ? (
                 <button
                     type="button"
