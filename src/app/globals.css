@@ -568,6 +568,7 @@ body {
 
 .collect-bars {
     display: flex;
+    justify-content: center;
     height: 72px;
     align-items: flex-end;
     gap: 3px;
@@ -575,27 +576,54 @@ body {
     border-bottom: 1px solid var(--line);
 }
 
-.collect-bars i {
+.collect-bars > span {
     position: relative;
+    display: flex;
     min-height: 3px;
     flex: 1;
+    max-width: 28px;
+    flex-direction: column;
+}
+
+.collect-bars i {
+    flex-basis: 0;
+}
+
+.collect-bars i,
+.collect-back-title i::before {
     background: linear-gradient(0deg, #9c7b05, var(--lime));
 }
 
-.collect-bars i.is-katsu::after {
+.collect-bars i.is-assists,
+.collect-back-title i.is-assists::before {
+    background: linear-gradient(0deg, #8d8f86, #f4f1e6);
+}
+
+.collect-back-title i {
+    font-style: normal;
+}
+
+.collect-back-title i::before {
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    margin: 0 3px 0 4px;
+    content: "";
+}
+
+.collect-bars > span.is-katsu::after {
     position: absolute;
     top: -15px;
     left: 50%;
     color: var(--lime);
     content: "★";
     font-size: 10px;
-    font-style: normal;
     transform: translateX(-50%);
 }
 
 .collect-bars-axis {
     display: flex;
-    justify-content: space-between;
+    justify-content: center;
     gap: 3px;
     margin-top: 3px;
     color: var(--muted);
@@ -603,8 +631,14 @@ body {
     font-weight: 700;
 }
 
+/* Con muchas jornadas solo se rotulan la primera y la última */
+.collect-bars-axis.is-ends {
+    justify-content: space-between;
+}
+
 .collect-bars-axis span {
     flex: 1;
+    max-width: 28px;
     text-align: center;
 }
 
@@ -613,23 +647,120 @@ body {
     font-size: 0.85rem;
 }
 
-.collect-rows div {
-    display: flex;
-    justify-content: space-between;
-    gap: 10px;
-    padding: 6px 0;
-    border-bottom: 1px solid #ffffff14;
-    font-size: 0.85rem;
+/* Resumen del reverso: rejilla de 3 × 3 */
+.collect-summary {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 4px;
 }
 
-.collect-rows dt {
+.collect-summary div {
+    display: grid;
+    align-content: start;
+    gap: 2px;
+    min-width: 0;
+    padding: 6px 5px;
+    border: 1px solid #ffffff14;
+    background: #ffffff08;
+}
+
+.collect-summary dt {
     color: var(--muted);
+    font-size: 0.55rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
 }
 
-.collect-rows dd {
+.collect-summary dd {
     color: white;
+    font-size: 0.8rem;
     font-weight: 800;
-    text-align: right;
+    line-height: 1.15;
+    overflow-wrap: anywhere;
+}
+
+.collect-injury {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    color: #ff8a8a;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+/* Tabla «Detalle por partido» bajo la carta */
+.collect-detail {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+}
+
+.collect-detail th,
+.collect-detail td {
+    padding: 5px 3px;
+    border-bottom: 1px solid #ffffff12;
+    text-align: center;
+}
+
+.collect-detail thead th {
+    color: var(--muted);
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+}
+
+.collect-detail thead th:first-child,
+.collect-detail tbody th {
+    text-align: left;
+}
+
+.collect-detail tbody th {
+    font-weight: 400;
+}
+
+.collect-detail tbody th b {
+    margin-right: 4px;
+    color: white;
+}
+
+.collect-detail tbody th span {
+    display: inline-block;
+    max-width: 70px;
+    overflow: hidden;
+    color: var(--muted);
+    text-overflow: ellipsis;
+    vertical-align: bottom;
+    white-space: nowrap;
+}
+
+.collect-detail td {
+    color: #ffffffb0;
+}
+
+.collect-detail td.is-on {
+    color: var(--lime);
+    font-weight: 800;
+}
+
+.collect-detail td i {
+    display: inline-block;
+    min-width: 11px;
+    margin: 0 1px;
+    padding: 0 2px;
+    color: var(--ink);
+    font-style: normal;
+    font-weight: 800;
+}
+
+.collect-detail td i.is-yellow {
+    background: #f3cf32;
+}
+
+.collect-detail td i.is-red {
+    background: #e04848;
+    color: white;
 }
 
 .collect-back-crest {

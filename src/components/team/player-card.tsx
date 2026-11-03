@@ -19,6 +19,15 @@ function initials(name: string): string {
     return name.split(" ").map((part) => part[0]).join("").slice(0, 3);
 }
 
+// "marcados/tirados" con el porcentaje de acierto, o "—" si no ha tirado ninguno.
+function successRate(value: string): string {
+    const [scored, taken] = value.split("/").map(Number);
+    if (!taken) return "—";
+    return `${value} · ${Math.round((scored / taken) * 100)}%`;
+}
+
+const perGame = (value: number, games: number) => (games ? (value / games).toLocaleString("es-ES", { maximumFractionDigits: 2 }) : "—");
+
 function CardShine() {
     return <><span className="collect-holo" aria-hidden="true" /><span className="collect-glare" aria-hidden="true" /></>;
 }
@@ -28,9 +37,21 @@ export function PlayerCard({ player }: { player: Player }) {
     const { ref, flipped, handlers } = useCardSpin<HTMLDivElement>();
     const katsuRounds = player.katsuRounds ?? [];
     const matches = player.matchStats ?? [];
-    const maxGoals = Math.max(1, ...matches.map((match) => match.goals));
-    const best = matches.reduce<(typeof matches)[number] | null>((top, match) => (match.goals > (top?.goals ?? 0) ? match : top), null);
-    const goalsPerGame = player.games ? (player.goals / player.games).toLocaleString("es-ES", { maximumFractionDigits: 2 }) : "—";
+    const contributions = (match: (typeof matches)[number]) => match.goals + match.assists;
+    const maxContributions = Math.max(1, ...matches.map(contributions));
+    const best = matches.reduce<(typeof matches)[number] | null>((top, match) => (contributions(match) > (top ? contributions(top) : 0) ? match : top), null);
+    const scoringGames = matches.filter((match) => match.goals > 0).length;
+    const summary = [
+        { label: "G + A", value: player.goals + player.assists },
+        { label: "Goles / conv.", value: perGame(player.goals, player.games) },
+        { label: "Asist. / conv.", value: perGame(player.assists, player.games) },
+        { label: "Penaltis", value: successRate(player.penalties) },
+        { label: "Dobles pen.", value: successRate(player.doublePenalties) },
+        { label: "Partidos con gol", value: matches.length ? `${scoringGames} de ${matches.length}` : "—" },
+        { label: "Mejor partido", value: best ? `${best.goals} G · ${best.assists} A · J${best.jornada}` : "—" },
+        { label: "Tarjetas", value: `${player.yellowCards} A · ${player.redCards} R` },
+        { label: "KATSU", value: katsuRounds.length ? katsuRounds.map((round) => `J${round}`).join(", ") : "—" },
+    ];
     const positionCode = POSITION_CODES[player.position];
     const stats = [
         { value: player.goals, label: "GOL" },
@@ -91,28 +112,28 @@ export function PlayerCard({ player }: { player: Player }) {
                             <b>{player.name}</b>
                             <span>#{player.number ?? "—"}</span>
                         </div>
-                        <p className="collect-back-title">Goles por jornada{katsuRounds.length ? " · ★ KATSU" : ""}</p>
+                        <p className="collect-back-title">Por jornada{matches.length ? <> · <i className="is-goals">Goles</i> <i className="is-assists">Asist.</i></> : null}{katsuRounds.length ? " · ★ KATSU" : ""}</p>
                         {matches.length ? (
                             <div>
                                 <div className="collect-bars">
                                     {matches.map((match) => (
-                                        <i key={match.jornada} className={katsuRounds.includes(match.jornada) ? "is-katsu" : ""} style={{ height: `${Math.max(4, (match.goals / maxGoals) * 100)}%` }} title={`${match.label}: ${match.goals} goles`} />
+                                        <span key={match.jornada} className={katsuRounds.includes(match.jornada) ? "is-katsu" : ""} style={{ height: `${Math.max(4, (contributions(match) / maxContributions) * 100)}%` }} title={`${match.label}: ${match.goals} goles, ${match.assists} asistencias`}>
+                                            {match.assists ? <i className="is-assists" style={{ flexGrow: match.assists }} /> : null}
+                                            <i className="is-goals" style={{ flexGrow: Math.max(match.goals, contributions(match) ? 0 : 1) }} />
+                                        </span>
                                     ))}
                                 </div>
-                                <div className="collect-bars-axis">
+                                <div className={`collect-bars-axis${matches.length > 12 ? " is-ends" : ""}`}>
                                     {matches.length <= 12
                                         ? matches.map((match) => <span key={match.jornada}>J{match.jornada}</span>)
                                         : <><span>J{matches[0].jornada}</span><span>J{matches.at(-1)?.jornada}</span></>}
                                 </div>
                             </div>
                         ) : <p className="collect-empty">Todavía no hay estadísticas por partido.</p>}
-                        <dl className="collect-rows">
-                            <div><dt>Mejor partido</dt><dd>{best ? `${best.goals} ${best.goals === 1 ? "gol" : "goles"} · J${best.jornada}` : "—"}</dd></div>
-                            <div><dt>Goles por convocatoria</dt><dd>{goalsPerGame}</dd></div>
-                            <div><dt>Tarjetas</dt><dd>{player.yellowCards} A · {player.redCards} R</dd></div>
-                            <div><dt>Jugador KATSU</dt><dd>{katsuRounds.length ? katsuRounds.map((round) => `J${round}`).join(", ") : "Todavía no"}</dd></div>
-                            {player.injured ? <div><dt>Lesión</dt><dd>{player.injuryDescription || "Lesionado"}</dd></div> : null}
+                        <dl className="collect-summary">
+                            {summary.map((item) => <div key={item.label}><dt>{item.label}</dt><dd>{item.value}</dd></div>)}
                         </dl>
+                        {player.injured ? <p className="collect-injury"><Cross size={12} strokeWidth={3} /> {player.injuryDescription || "Lesionado"}</p> : null}
                         <Image src="/fotos/escudo-256.png" alt="" width={40} height={40} className="collect-back-crest" draggable={false} />
                         <CardShine />
                     </div>
@@ -126,17 +147,38 @@ export function PlayerCard({ player }: { player: Player }) {
 export function PlayerMatchDetail({ player }: { player: Player }) {
     if (!player.matchStats?.length) return null;
     return (
-        <details className="mx-auto mt-4 w-full max-w-[320px] border border-[var(--line)] bg-black/60 px-4 py-3">
+        <details className="mx-auto mt-4 w-full max-w-[320px] border border-[var(--line)] bg-black/85 px-3 py-3">
             <summary className="cursor-pointer text-[10px] font-bold uppercase tracking-[0.1em] text-[var(--lime)]">Detalle por partido</summary>
-            <div className="mt-3 space-y-3">
-                {player.matchStats.map((match) => (
-                    <div key={match.jornada} className="border-l border-[var(--lime)]/50 pl-3 text-[11px] leading-5 text-[var(--muted)]">
-                        <p className="font-semibold text-white/85">{match.label}</p>
-                        <p>{match.goals} goles · {match.assists} asistencias · PEN {match.penalties} · DOBLES {match.doublePenalties}</p>
-                        <p>Faltas directas {match.directFreeKicks} · {match.yellowCards} A {match.redCards} R</p>
-                    </div>
-                ))}
-            </div>
+            <table className="collect-detail mt-3">
+                <thead>
+                    <tr>
+                        <th scope="col">Partido</th>
+                        <th scope="col" title="Goles">G</th>
+                        <th scope="col" title="Asistencias">A</th>
+                        <th scope="col" title="Penaltis marcados/tirados">PEN</th>
+                        <th scope="col" title="Dobles penaltis marcados/tirados">DOB</th>
+                        <th scope="col" title="Faltas directas marcadas">FD</th>
+                        <th scope="col" title="Tarjetas">TJ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {player.matchStats.map((match) => (
+                        <tr key={match.jornada}>
+                            <th scope="row" title={match.label}><b>J{match.jornada}</b><span>{match.opponent}</span></th>
+                            <td className={match.goals ? "is-on" : ""}>{match.goals}</td>
+                            <td className={match.assists ? "is-on" : ""}>{match.assists}</td>
+                            <td>{match.penalties}</td>
+                            <td>{match.doublePenalties}</td>
+                            <td>{match.directFreeKicks}</td>
+                            <td>
+                                {match.yellowCards ? <i className="is-yellow" title="Amarillas">{match.yellowCards}</i> : null}
+                                {match.redCards ? <i className="is-red" title="Rojas">{match.redCards}</i> : null}
+                                {match.yellowCards || match.redCards ? null : "—"}
+                            </td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
         </details>
     );
 }

@@ -121,6 +121,7 @@ export const getTeamData = cache(async (season: string, phase: string, group: st
                 detail.push({
                     jornada: fixture.jornada,
                     label: `J${fixture.jornada}${date ? ` · ${date}` : ""} vs ${opponent}`,
+                    opponent,
                     goals: record.goles,
                     assists: record.asistencias,
                     penalties: `${record.penaltis_marcados}/${record.penaltis_tirados}`,
