@@ -351,6 +351,26 @@ body {
     mask-image: linear-gradient(180deg, #000 62%, transparent 96%);
 }
 
+/* Fotos y vídeos encuadrados (framed-media.tsx): aparecen cuando ya están colocados. */
+.framed-media {
+    transition: opacity 0.35s ease;
+}
+
+.framed-media.is-pending {
+    opacity: 0;
+}
+
+/* Recolocación tras medir el vídeo al terminar (navegadores que no dejan medirlo antes). */
+.framed-media.is-reframing {
+    transition: opacity 0.35s ease, left 0.7s ease, top 0.7s ease, width 0.7s ease, height 0.7s ease;
+}
+
+/* Un vídeo más estrecho que la carta funde sus bordes laterales con el fondo. */
+.collect-media-video .framed-media {
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 9%, #000 91%, transparent);
+    mask-image: linear-gradient(90deg, transparent, #000 9%, #000 91%, transparent);
+}
+
 .collect-initials {
     display: grid;
     height: 100%;
