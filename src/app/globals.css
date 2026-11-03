@@ -81,6 +81,19 @@ body {
     touch-action: pan-y !important;
 }
 
+/* Capa de los marcadores encima del canvas: deja pasar los gestos al campo salvo sobre los jugadores */
+.player-3d-markers {
+    position: absolute;
+    z-index: 1; /* contexto propio: los marcadores quedan bajo el botón «Centrar» */
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+}
+
+.player-3d-markers > * {
+    pointer-events: auto;
+}
+
 .player-field-status {
     display: grid;
     min-height: 100%;
