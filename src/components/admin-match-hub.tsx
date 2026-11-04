@@ -4,6 +4,7 @@ import { useState, type ReactNode } from "react";
 import { Check, ChevronLeft, ChevronRight } from "lucide-react";
 import { AdminCallupForm } from "@/components/admin-callup-form";
 import { AdminKatsuPicker } from "@/components/admin-katsu-picker";
+import { AdminMatchFantasy, type FantasySaved } from "@/components/admin-match-fantasy";
 import { AdminMatchChronicle } from "@/components/admin-match-chronicle";
 import { AdminMatchPhoto } from "@/components/admin-media";
 import { AdminMatchStats } from "@/components/admin-match-stats";
@@ -28,8 +29,9 @@ export type HubMatch = {
     katsuId: string | null;
     chronicle: string | null;
     photo: string | null;
+    fantasy: FantasySaved | null;
 };
-export type HubPlayer = { id: string; name: string; number: number | null };
+export type HubPlayer = { id: string; name: string; number: number | null; position?: string; injured?: boolean };
 type Step = "convocatoria" | "resultado" | "estadisticas" | "katsu" | "cronica" | "foto";
 
 const RECENT_MATCH_MS = 3 * 24 * 60 * 60 * 1000;
@@ -85,6 +87,9 @@ function MatchPanels({ competitionId, match, players }: { competitionId: string;
     const withStats = Object.values(match.stats).filter(hasStats).length;
     const teamGoals = match.home === FEATURED_TEAM ? match.homeGoals : match.awayGoals;
     const katsu = players.find((player) => player.id === match.katsuId);
+    const conceded = isPlayed(match) ? (match.home === FEATURED_TEAM ? match.awayGoals : match.homeGoals) : null;
+    const fantasyRows = match.fantasy ? Object.keys(match.fantasy.rows).length : 0;
+    const fantasyDone = Boolean(match.fantasy && (fantasyRows || match.fantasy.doublePenaltiesAgainst));
 
     return (
         <div className="space-y-2">
@@ -100,6 +105,9 @@ function MatchPanels({ competitionId, match, players }: { competitionId: string;
             <Panel title="KATSU" open={openStep === "katsu"} done={Boolean(match.katsuId)} status={katsu?.name ?? (match.katsuId ? "Elegido" : "Sin elegir")}>
                 <AdminKatsuPicker matchId={match.id} playerId={match.katsuId} players={players} calledUp={calledUp} />
             </Panel>
+            <Panel title="Fantasy" open={false} done={fantasyDone} status={match.fantasy ? (fantasyDone ? "Revisado" : "Sin revisar") : "Falta migración"}>
+                <AdminMatchFantasy matchId={match.id} players={players} calledUp={calledUp} stats={match.stats} katsuId={match.katsuId} conceded={conceded} saved={match.fantasy} />
+            </Panel>
             <Panel title="Crónica" open={openStep === "cronica"} done={Boolean(match.chronicle)} status={match.chronicle ? "Escrita" : "Sin crónica"}>
                 <AdminMatchChronicle matchId={match.id} chronicle={match.chronicle} />
             </Panel>
@@ -110,7 +118,7 @@ function MatchPanels({ competitionId, match, players }: { competitionId: string;
     );
 }
 
-// Todo lo de un partido del Bayern en un sitio: convocatoria → resultado → estadísticas → KATSU → crónica → foto.
+// Todo lo de un partido del Bayern en un sitio: convocatoria → resultado → estadísticas → KATSU → fantasy → crónica → foto.
 export function AdminMatchHub({ competitionId, matches, players }: { competitionId: string; matches: HubMatch[]; players: HubPlayer[] }) {
     const [matchId, setMatchId] = useState(() => defaultMatchId(matches));
     const index = matches.findIndex((match) => match.id === matchId);

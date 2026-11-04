@@ -27,7 +27,7 @@ function withChange(line: MatchStatLine, key: MatchStatKey, value: number): Matc
     return next;
 }
 
-function Stepper({ label, value, onChange }: { label: string; value: number; onChange: (value: number) => void }) {
+export function Stepper({ label, value, onChange }: { label: string; value: number; onChange: (value: number) => void }) {
     return (
         <div className="min-w-0">
             <span className="block truncate text-[10px] font-semibold uppercase tracking-wide text-[var(--muted)]">{label}</span>
