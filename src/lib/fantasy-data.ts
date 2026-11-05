@@ -10,7 +10,7 @@ export const getFantasyRanking = cache(async (season: string, phase: string, gro
     try {
         const supabase = await createSupabaseServerClient();
         const [playerResult, matchResult, callupResult, statsResult, fantasyResult] = await Promise.all([
-            supabase.from("jugadores").select("id,nombre,dorsal,posicion,activo"),
+            supabase.from("jugadores").select("id,nombre,dorsal,posicion,activo,foto_url,video_url"),
             supabase.from("partidos").select("id,jornada,equipo_local,equipo_visitante,goles_local,goles_visitante,jugador_katsu_id,dobles_penaltis_en_contra").eq("temporada", season).eq("fase", phase).eq("grupo", group),
             supabase.from("convocatorias").select("partido_id,jugador_id,convocado,partidos!inner(temporada,fase,grupo)").eq("partidos.temporada", season).eq("partidos.fase", phase).eq("partidos.grupo", group),
             supabase.from("estadisticas").select("partido_id,jugador_id,goles,asistencias,penaltis_marcados,penaltis_tirados,dobles_penaltis_marcados,dobles_penaltis_tirados,amarillas,rojas,partidos!inner(temporada,fase,grupo)").eq("partidos.temporada", season).eq("partidos.fase", phase).eq("partidos.grupo", group),
@@ -51,7 +51,7 @@ export const getFantasyRanking = cache(async (season: string, phase: string, gro
         const calledUpAnywhere = new Set(matches.flatMap((match) => [...match.calledUp]));
         const players = (playerResult.data ?? [])
             .filter((player) => player.activo || calledUpAnywhere.has(player.id))
-            .map((player) => ({ id: player.id, name: player.nombre, number: player.dorsal, position: player.posicion, active: player.activo }));
+            .map((player) => ({ id: player.id, name: player.nombre, number: player.dorsal, position: player.posicion, active: player.activo, photo: player.foto_url, video: player.video_url }));
 
         return buildFantasyRanking({ players, matches, stats, rows });
     } catch (error) {

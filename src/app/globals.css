@@ -1412,3 +1412,82 @@ body {
     }
 }
 
+
+/* Fantasy (fantasy-board.tsx): podio con el color de cada medalla en --medal y ficha que sube desde abajo. */
+.fantasy-podium {
+    animation: fantasy-rise 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.fantasy-podium:nth-child(1) {
+    animation-delay: 0.15s;
+}
+
+.fantasy-podium:nth-child(3) {
+    animation-delay: 0.3s;
+}
+
+.fantasy-podium-card {
+    border: 2px solid var(--medal);
+    background: radial-gradient(circle at 50% 28%, color-mix(in srgb, var(--medal) 32%, transparent), #141614 72%);
+    box-shadow: 0 12px 30px #000a;
+    transition: transform 0.2s ease;
+}
+
+.fantasy-podium:hover .fantasy-podium-card {
+    transform: translateY(-3px);
+}
+
+.fantasy-podium.is-leader .fantasy-podium-card {
+    box-shadow: 0 0 0 1px #0008, 0 0 30px color-mix(in srgb, var(--medal) 45%, transparent), 0 14px 34px #000c;
+}
+
+.fantasy-podium.is-leader .fantasy-podium-card::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(115deg, transparent 35%, #fff4 50%, transparent 65%);
+    transform: translateX(-120%);
+    animation: fantasy-shine 4.5s ease-in-out 1.2s infinite;
+}
+
+.fantasy-podium-step {
+    background: linear-gradient(180deg, var(--medal), color-mix(in srgb, var(--medal) 55%, #000));
+}
+
+.fantasy-sheet {
+    animation: fantasy-sheet-in 0.32s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.fantasy-sheet-backdrop {
+    animation: fantasy-fade 0.2s ease both;
+}
+
+@keyframes fantasy-rise {
+    from { opacity: 0; transform: translateY(24px) scale(0.96); }
+    to { opacity: 1; transform: none; }
+}
+
+@keyframes fantasy-shine {
+    0%, 60% { transform: translateX(-120%); }
+    100% { transform: translateX(120%); }
+}
+
+@keyframes fantasy-sheet-in {
+    from { opacity: 0; transform: translateY(40px); }
+    to { opacity: 1; transform: none; }
+}
+
+@keyframes fantasy-fade {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .fantasy-podium,
+    .fantasy-sheet,
+    .fantasy-sheet-backdrop,
+    .fantasy-podium.is-leader .fantasy-podium-card::after {
+        animation: none;
+    }
+}
