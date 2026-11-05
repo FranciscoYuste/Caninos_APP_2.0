@@ -50,7 +50,7 @@ export const FANTASY_RULES: Array<{ title: string; rows: Array<[string, number |
         ["No ir por lesión, fuerza mayor o decisión técnica", 0],
     ] },
     { title: "Ataque", rows: [
-        ["Gol (de jugada)", FANTASY_POINTS.goal],
+        ["Gol", FANTASY_POINTS.goal],
         ["Asistencia", FANTASY_POINTS.assist],
         ["Jugador KATSU del partido", FANTASY_POINTS.katsu],
     ] },
