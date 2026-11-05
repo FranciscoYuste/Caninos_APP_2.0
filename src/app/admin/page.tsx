@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { AdminPanel } from "@/components/admin-panel";
-import type { FantasySaved } from "@/components/admin-match-fantasy";
+import type { FantasySaved } from "@/components/admin-match-stats";
 import type { HubMatch } from "@/components/admin-match-hub";
 import type { MediaPlayer } from "@/components/admin-media";
 import type { ResultMatch } from "@/components/admin-results-editor";

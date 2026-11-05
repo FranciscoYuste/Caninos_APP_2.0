@@ -4,7 +4,8 @@
 
 -- 1. Una fila por jugador y partido, solo cuando hay algo distinto de lo normal:
 --    - convocados: portero del partido, penaltis provocados/cometidos/parados y goles en propia;
---    - no convocados: motivo de la ausencia (sin fila = ausencia sin justificar).
+--    - no convocados: motivo de la ausencia (el admin guarda siempre una fila por ausente para
+--      saber que se revisó; sin fila también cuenta como ausencia sin justificar).
 create table if not exists public.fantasy_partido (
   partido_id uuid not null references public.partidos(id) on delete cascade,
   jugador_id uuid not null references public.jugadores(id) on delete cascade,
@@ -115,8 +116,6 @@ begin
       if motivo is null or motivo not in ('injustificada', 'justificada', 'tecnica') then
         raise exception 'Indica el motivo de la ausencia de %.', nombre_jugador;
       end if;
-      -- Sin fila ya cuenta como ausencia sin justificar.
-      continue when motivo = 'injustificada';
     end if;
 
     insert into public.fantasy_partido (
@@ -136,7 +135,50 @@ $$;
 revoke all on function public.guardar_fantasy_partido(uuid, smallint, jsonb) from public, anon, authenticated;
 grant execute on function public.guardar_fantasy_partido(uuid, smallint, jsonb) to service_role;
 
--- 4. Partidos ya jugados: quien está lesionado ahora y no fue convocado cuenta como ausencia
+-- 4. Paso «Estadísticas y fantasy» del admin: guarda las estadísticas del partido (mismo
+--    importar_estadisticas_jugadores que el CSV) y su fantasy en una sola transacción, para que
+--    nunca quede guardada una parte sin la otra.
+--    p_estadisticas: [{ jugador_id, goles, asistencias, ... }] (puede estar vacía).
+create or replace function public.guardar_estadisticas_fantasy_partido(
+  p_partido_id uuid,
+  p_estadisticas jsonb,
+  p_dobles_penaltis_en_contra smallint,
+  p_jugadores jsonb
+)
+returns jsonb language plpgsql security definer set search_path = '' as $$
+declare
+  partido record;
+  resultado_estadisticas jsonb;
+  resultado_fantasy jsonb;
+begin
+  select temporada, fase, grupo, jornada, equipo_local, equipo_visitante into partido
+  from public.partidos where id = p_partido_id;
+  if not found then
+    raise exception 'No existe el partido indicado.';
+  end if;
+  if jsonb_typeof(p_estadisticas) <> 'array' then
+    raise exception 'La lista de estadísticas no es válida.';
+  end if;
+
+  resultado_estadisticas := public.importar_estadisticas_jugadores(
+    partido.temporada, partido.fase, partido.grupo,
+    jsonb_build_array(jsonb_build_object(
+      'jornada', partido.jornada,
+      'equipo_local', partido.equipo_local,
+      'equipo_visitante', partido.equipo_visitante,
+      'estadisticas', p_estadisticas
+    ))
+  );
+  resultado_fantasy := public.guardar_fantasy_partido(p_partido_id, p_dobles_penaltis_en_contra, p_jugadores);
+
+  return resultado_estadisticas || resultado_fantasy;
+end;
+$$;
+
+revoke all on function public.guardar_estadisticas_fantasy_partido(uuid, jsonb, smallint, jsonb) from public, anon, authenticated;
+grant execute on function public.guardar_estadisticas_fantasy_partido(uuid, jsonb, smallint, jsonb) to service_role;
+
+-- 5. Partidos ya jugados: quien está lesionado ahora y no fue convocado cuenta como ausencia
 --    justificada (el resto de ausencias, sin justificar, no necesitan fila).
 insert into public.fantasy_partido (partido_id, jugador_id, ausencia)
 select partidos.id, jugadores.id, 'justificada'

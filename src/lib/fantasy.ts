@@ -45,12 +45,12 @@ export function concededPoints(goals: number, goalkeeper: boolean): number {
 // Datos de la tabla de reglas que se muestra en la web (y en el README).
 export const FANTASY_RULES: Array<{ title: string; rows: Array<[string, number | string]> }> = [
     { title: "Asistencia", rows: [
-        ["Ir al partido (convocado)", FANTASY_POINTS.attended],
+        ["Ir al partido", FANTASY_POINTS.attended],
         ["No ir sin justificar", FANTASY_POINTS.unjustifiedAbsence],
         ["No ir por lesión, fuerza mayor o decisión técnica", 0],
     ] },
     { title: "Ataque", rows: [
-        ["Gol (de jugada o falta)", FANTASY_POINTS.goal],
+        ["Gol (de jugada)", FANTASY_POINTS.goal],
         ["Asistencia", FANTASY_POINTS.assist],
         ["Jugador KATSU del partido", FANTASY_POINTS.katsu],
     ] },
@@ -65,8 +65,8 @@ export const FANTASY_RULES: Array<{ title: string; rows: Array<[string, number |
         ["Cometer un penalti", FANTASY_POINTS.penaltyConceded],
         ["Cometer un penalti que acaba en gol (en total)", FANTASY_POINTS.penaltyConcededGoal],
         ["Doble penalti en contra (a todos los que jugaron)", FANTASY_POINTS.doublePenaltyAgainst],
-        ["Portero: parar un penalti", FANTASY_POINTS.penaltySaved],
-        ["Portero: parar un doble penalti", FANTASY_POINTS.doublePenaltySaved],
+        ["Portero para un penalti", FANTASY_POINTS.penaltySaved],
+        ["Portero para un doble penalti", FANTASY_POINTS.doublePenaltySaved],
     ] },
     { title: "Disciplina", rows: [
         ["Amarilla", FANTASY_POINTS.yellowCard],
@@ -76,10 +76,10 @@ export const FANTASY_RULES: Array<{ title: string; rows: Array<[string, number |
     ] },
 ];
 
-export const FANTASY_CONCEDED_RULES = [0, 1, 2, 3, 4, 5].map((goals) => ({
-    goals: goals === 5 ? "5 o más" : String(goals),
-    goalkeeper: goals === 5 ? "−3, −1 más por gol" : concededPoints(goals, true),
-    field: goals === 5 ? "−3, −1 más por gol" : concededPoints(goals, false),
+export const FANTASY_CONCEDED_RULES = [0, 1, 2, 3, 4, 5, 6].map((goals) => ({
+    goals: goals === 6 ? "6 o más" : String(goals),
+    goalkeeper: goals === 6 ? "−1 más por gol" : concededPoints(goals, true),
+    field: goals === 6 ? "−1 más por gol" : concededPoints(goals, false),
 }));
 
 // Datos del jugador en el partido que ya existen en estadisticas.

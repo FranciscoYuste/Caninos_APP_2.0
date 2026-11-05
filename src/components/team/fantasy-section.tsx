@@ -34,7 +34,7 @@ function RulesTable() {
                             <tr className="text-left text-[10px] uppercase text-[var(--muted)]">
                                 <th className="py-2 font-bold">Goles</th>
                                 <th className="py-2 text-right font-bold">Portero</th>
-                                <th className="py-2 text-right font-bold">Campo</th>
+                                <th className="py-2 text-right font-bold">Equipo</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-[var(--line)]">
@@ -47,7 +47,7 @@ function RulesTable() {
                             ))}
                         </tbody>
                     </table>
-                    <p className="mt-2 text-[11px] leading-5 text-[var(--muted)]">Solo para quienes jugaron. El portero suma su columna y los jugadores de campo la suya.</p>
+                    <p className="mt-2 text-[11px] leading-5 text-[var(--muted)]">Solo para quienes jugaron. El portero suma su columna y los jugadores de campo la de Equipo. No tiene tope: cada gol más resta 1.</p>
                 </div>
             </div>
         </details>
