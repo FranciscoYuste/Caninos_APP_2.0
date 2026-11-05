@@ -3,8 +3,8 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useRef, type ReactNode } from "react";
-import { Activity, Ambulance, ArrowUpRight, CalendarDays, CalendarPlus, ClipboardList, Gamepad2, Shield, Star, Trophy, Users } from "lucide-react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { Activity, Ambulance, ArrowUpRight, CalendarDays, CalendarPlus, ChevronDown, ClipboardList, Gamepad2, Shield, Star, Trophy, Users } from "lucide-react";
 import { Countdown } from "@/components/team/countdown";
 import { FormBadges } from "@/components/team/form-badges";
 import { competitionPath, isTeamSection, type TeamSection } from "@/lib/competition-paths";
@@ -33,10 +33,21 @@ function sectionHref(competition: ShellCompetition, id: MenuId) {
 // Al pulsar una sección se baja hasta su contenido, con el menú arriba del todo. Vive fuera del
 // componente porque las páginas de detalle montan su propio TeamShell al navegar.
 let scrollToSectionPending = false;
+const markScrollPending = () => { scrollToSectionPending = true; };
+function takeScrollPending(): boolean {
+    const pending = scrollToSectionPending;
+    scrollToSectionPending = false;
+    return pending;
+}
+
+// Alto de la barra fina de secciones del móvil.
+const COMPACT_BAR_HEIGHT = 52;
 
 function scrollToSection(nav: HTMLElement | null, content: HTMLElement | null) {
     if (!nav || !content) return;
-    const top = content.getBoundingClientRect().top + window.scrollY - nav.offsetHeight;
+    // Escritorio: la fila de secciones queda fija encima. Móvil: la tapa la barra fina.
+    const covered = getComputedStyle(nav).position === "sticky" ? nav.offsetHeight : COMPACT_BAR_HEIGHT;
+    const top = content.getBoundingClientRect().top + window.scrollY - covered;
     const smooth = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     window.scrollTo({ top: Math.max(0, top), behavior: smooth ? "smooth" : "auto" });
 }
@@ -60,11 +71,52 @@ export function TeamShell({ competition, competitions, seasons, teamPosition, ne
     const isCurrent = (item: ShellCompetition) => item.season === competition.season && item.slug === competition.slug;
     const navRef = useRef<HTMLElement>(null);
     const contentRef = useRef<HTMLDivElement>(null);
+    const [compact, setCompact] = useState(false);
+    const [menuOpen, setMenuOpen] = useState(false);
+    const currentItem = menuItems.find((item) => item.id === activeMenu);
+
+    // Barra fina del móvil: aparece cuando la rejilla de secciones ya ha quedado por encima.
+    useEffect(() => {
+        const nav = navRef.current;
+        if (!nav || typeof IntersectionObserver === "undefined") return;
+        const observer = new IntersectionObserver(([entry]) => {
+            setCompact(!entry.isIntersecting && entry.boundingClientRect.top < 0);
+        });
+        observer.observe(nav);
+        return () => observer.disconnect();
+    }, [pending]);
+
+    // Esc cierra el desplegable de secciones.
+    useEffect(() => {
+        if (!menuOpen) return;
+        const onKeyDown = (event: KeyboardEvent) => {
+            if (event.key === "Escape") setMenuOpen(false);
+        };
+        document.addEventListener("keydown", onKeyDown);
+        return () => document.removeEventListener("keydown", onKeyDown);
+    }, [menuOpen]);
+
+    const sectionLinks = (onPick?: () => void) => menuItems.map(({ id, label, icon: Icon }) => (
+        <Link
+            key={id}
+            href={sectionHref(competition, id)}
+            scroll={false}
+            onClick={() => {
+                onPick?.();
+                // Misma sección: no hay navegación, se baja ya.
+                if (sectionHref(competition, id) === pathname) scrollToSection(navRef.current, contentRef.current);
+                else markScrollPending();
+            }}
+            aria-current={activeMenu === id ? "page" : undefined}
+            className={`flex min-w-0 items-center justify-center gap-1.5 border px-2 py-3 odd:last:col-span-2 text-[10px] font-bold uppercase leading-tight tracking-[0.04em] transition-colors sm:shrink-0 sm:gap-2 sm:px-4 sm:tracking-[0.08em] ${activeMenu === id ? "border-[var(--lime)] bg-[var(--lime)] text-[var(--ink)]" : "border-[var(--line)] text-[var(--muted)] hover:border-[var(--lime)] hover:text-white"}`}
+        >
+            <Icon size={15} className="shrink-0" /><span className="min-w-0 text-center">{label}</span>
+        </Link>
+    ));
 
     // Tras navegar a la sección pulsada, cuando ya está pintada.
     useEffect(() => {
-        if (!scrollToSectionPending) return;
-        scrollToSectionPending = false;
+        if (!takeScrollPending()) return;
         const frame = requestAnimationFrame(() => scrollToSection(navRef.current, contentRef.current));
         return () => cancelAnimationFrame(frame);
     }, [pathname]);
@@ -144,23 +196,41 @@ export function TeamShell({ competition, competitions, seasons, teamPosition, ne
 
                 {!pending ? (
                     <>
-                        <nav ref={navRef} aria-label="Secciones del equipo" className="sticky top-0 z-10 -mx-5 grid grid-cols-2 gap-2 border-b border-[var(--line)] bg-[var(--ink)] px-5 py-3 sm:-mx-10 sm:flex sm:flex-wrap sm:justify-center sm:px-10">
-                            {menuItems.map(({ id, label, icon: Icon }) => (
-                                <Link
-                                    key={id}
-                                    href={sectionHref(competition, id)}
-                                    scroll={false}
-                                    onClick={() => {
-                                        // Misma sección: no hay navegación, se baja ya.
-                                        if (sectionHref(competition, id) === pathname) scrollToSection(navRef.current, contentRef.current);
-                                        else scrollToSectionPending = true;
-                                    }}
-                                    aria-current={activeMenu === id ? "page" : undefined} className={`flex min-w-0 items-center justify-center gap-1.5 border px-2 py-3 odd:last:col-span-2 text-[10px] font-bold uppercase leading-tight tracking-[0.04em] transition-colors sm:shrink-0 sm:gap-2 sm:px-4 sm:tracking-[0.08em] ${activeMenu === id ? "border-[var(--lime)] bg-[var(--lime)] text-[var(--ink)]" : "border-[var(--line)] text-[var(--muted)] hover:border-[var(--lime)] hover:text-white"}`}>
-                                    <Icon size={15} className="shrink-0" /><span className="min-w-0 text-center">{label}</span>
-                                </Link>
-                            ))}
+                        {/* En el móvil la rejilla se va con la página; en escritorio (una fila) queda fija arriba. */}
+                        <nav ref={navRef} aria-label="Secciones del equipo" className="z-10 -mx-5 grid grid-cols-2 gap-2 border-b border-[var(--line)] bg-[var(--ink)] px-5 py-3 sm:sticky sm:top-0 sm:-mx-10 sm:flex sm:flex-wrap sm:justify-center sm:px-10">
+                            {sectionLinks()}
                         </nav>
                         <div ref={contentRef}>{children}</div>
+
+                        {/* Móvil: al pasar la rejilla, una barra fina con la sección actual y «Secciones», que despliega todos los botones. */}
+                        {menuOpen ? <div className="fixed inset-0 z-40 bg-black/60 sm:hidden" onClick={() => setMenuOpen(false)} aria-hidden="true" /> : null}
+                        <div
+                            inert={!compact && !menuOpen}
+                            className={`fixed inset-x-0 top-0 z-50 border-b border-[var(--line)] bg-[var(--ink)]/95 pt-[env(safe-area-inset-top)] backdrop-blur transition-transform duration-200 sm:hidden ${compact || menuOpen ? "translate-y-0" : "-translate-y-full"}`}
+                        >
+                            <div className="flex items-center gap-3 px-5" style={{ height: COMPACT_BAR_HEIGHT }}>
+                                <Image src="/fotos/escudo-256.png" alt="" width={28} height={28} className="size-7 shrink-0 object-contain" />
+                                {currentItem ? (
+                                    <span className="flex min-w-0 items-center gap-1.5 text-[11px] font-black uppercase tracking-[0.06em] text-[var(--lime)]">
+                                        <currentItem.icon size={15} className="shrink-0" /><span className="truncate">{currentItem.label}</span>
+                                    </span>
+                                ) : null}
+                                <button
+                                    type="button"
+                                    aria-expanded={menuOpen}
+                                    aria-controls="secciones-compactas"
+                                    onClick={() => setMenuOpen((open) => !open)}
+                                    className="ml-auto inline-flex min-h-10 shrink-0 items-center gap-1.5 border border-[var(--line)] px-3 text-[10px] font-bold uppercase tracking-[0.06em] text-white hover:border-[var(--lime)]"
+                                >
+                                    Secciones <ChevronDown size={14} className={`transition-transform ${menuOpen ? "rotate-180" : ""}`} />
+                                </button>
+                            </div>
+                            {menuOpen ? (
+                                <nav id="secciones-compactas" aria-label="Secciones del equipo" className="grid grid-cols-2 gap-2 border-t border-[var(--line)] px-5 py-3">
+                                    {sectionLinks(() => setMenuOpen(false))}
+                                </nav>
+                            ) : null}
+                        </div>
                     </>
                 ) : (
                     <section className="mx-auto max-w-3xl py-16 text-center sm:py-24">
