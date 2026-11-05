@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { EMPTY_FANTASY_EXTRA, buildFantasyRanking, categoryTotals, concededPoints, latestHighlight, scorePlayerMatch, type FantasyStats } from "@/lib/fantasy";
+import { EMPTY_FANTASY_EXTRA, buildFantasyRanking, categoryTotals, concededPoints, fantasyJornadas, latestHighlight, rankHistory, rankingAt, scorePlayerMatch, type FantasyStats } from "@/lib/fantasy";
 
 const NO_STATS: FantasyStats = { goles: 0, asistencias: 0, penaltis_marcados: 0, penaltis_tirados: 0, dobles_penaltis_marcados: 0, dobles_penaltis_tirados: 0, amarillas: 0, rojas: 0 };
 const played = (overrides: Partial<Parameters<typeof scorePlayerMatch>[0] & { calledUp: true }> = {}) => scorePlayerMatch({
@@ -90,6 +90,21 @@ describe("buildFantasyRanking", () => {
         expect([best?.player.name, best?.match.jornada, best?.match.total]).toEqual(["Cris", 2, 21]);
     });
 
+    it("rankingAt devuelve la clasificación de una jornada pasada y rankHistory el puesto en cada una", () => {
+        const second = { id: "m2", jornada: 2, opponent: "Otro", score: "0-4", conceded: 4, katsuId: "c", doublePenaltiesAgainst: 0, calledUp: new Set(["b", "c"]) };
+        const stats = new Map([["m2:c", { ...NO_STATS, goles: 3 }]]);
+        const ranking = buildFantasyRanking({ players, matches: [match, second], stats, rows: [] });
+        expect(fantasyJornadas(ranking)).toEqual([1, 2]);
+        const afterFirst = rankingAt(ranking, 1);
+        expect(afterFirst.map((row) => [row.name, row.total, row.rank, row.movement, row.played, row.matches.length])).toEqual([
+            ["Ana", 11, 1, null, 1, 1],
+            ["Bea", 11, 1, null, 1, 1],
+            ["Cris", -5, 3, null, 0, 1],
+        ]);
+        expect([...rankHistory(ranking, "c")]).toEqual([[1, 3], [2, 1]]);
+        expect(rankingAt(ranking, 2)).toEqual(ranking);
+    });
+
     it("sin partido anterior no hay flechas", () => {
         const ranking = buildFantasyRanking({ players, matches: [match], stats: new Map(), rows: [] });
         expect(ranking.every((row) => row.movement === null)).toBe(true);
@@ -99,7 +114,7 @@ describe("buildFantasyRanking", () => {
 describe("categoryTotals", () => {
     it("reparte los puntos por categoría y suma el total", () => {
         const score = played({ stats: { ...NO_STATS, goles: 1, amarillas: 1 }, katsu: true, conceded: 0 });
-        const totals = categoryTotals([{ id: "m", jornada: 1, opponent: "X", score: "1-0", ...score }]);
+        const totals = categoryTotals([{ id: "m", jornada: 1, opponent: "X", score: "1-0", played: true, ...score }]);
         expect(Object.fromEntries(totals.map((item) => [item.id, item.points]))).toEqual({ asistencia: 5, ataque: 8, penaltis: 0, defensa: 3, disciplina: -1 });
         expect(totals.reduce((sum, item) => sum + item.points, 0)).toBe(score.total);
     });

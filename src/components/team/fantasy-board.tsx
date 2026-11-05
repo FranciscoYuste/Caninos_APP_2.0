@@ -1,11 +1,11 @@
 "use client";
 
 import Image from "next/image";
-import { useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { ArrowDown, ArrowUp, Minus, X } from "lucide-react";
 import { FramedPhoto, FramedVideo } from "@/components/team/framed-media";
 import { useModalDialog } from "@/components/team/use-modal-dialog";
-import { categoryTotals, formatPoints, latestHighlight, type FantasyMatchScore, type FantasyPlayerRow } from "@/lib/fantasy";
+import { categoryTotals, fantasyJornadas, formatPoints, latestHighlight, rankHistory, rankingAt, type FantasyMatchScore, type FantasyPlayerRow } from "@/lib/fantasy";
 import { AVATAR_PHOTO_FRAME, FANTASY_PHOTO_FRAME, FANTASY_VIDEO_FRAME } from "@/lib/media-framing";
 
 const MEDALS = [
@@ -34,9 +34,11 @@ function CountUp({ value, className, signed = false }: { value: number; classNam
         const observer = new IntersectionObserver(([entry]) => {
             if (!entry.isIntersecting) return;
             observer.disconnect();
-            const start = performance.now();
+            // El inicio es el primer fotograma: su marca de tiempo puede ser anterior a performance.now().
+            let start: number | null = null;
             const tick = (now: number) => {
-                const progress = Math.min(1, (now - start) / 1100);
+                start ??= now;
+                const progress = Math.min(1, Math.max(0, (now - start) / 1100));
                 const eased = 1 - (1 - progress) ** 3;
                 setShown(progress < 1 ? Math.round(value * eased) : null);
                 if (progress < 1) frame = requestAnimationFrame(tick);
@@ -177,8 +179,8 @@ function Highlight({ ranking, onOpen }: { ranking: FantasyPlayerRow[]; onOpen: (
     );
 }
 
-// Puntos acumulados partido a partido. Tocar un punto muestra su valor.
-function EvolutionChart({ matches }: { matches: FantasyMatchScore[] }) {
+// Puntos acumulados partido a partido. Tocar un punto muestra su puesto y sus puntos en esa jornada.
+function EvolutionChart({ matches, ranks }: { matches: FantasyMatchScore[]; ranks: Map<number, number> }) {
     const [selected, setSelected] = useState(matches.length - 1);
     if (matches.length < 2) return null;
     const cumulative = matches.reduce<number[]>((list, match) => [...list, (list.at(-1) ?? 0) + match.total], []);
@@ -215,12 +217,12 @@ function EvolutionChart({ matches }: { matches: FantasyMatchScore[] }) {
                             <text x={x(index)} y={height - 6} textAnchor="middle" fontSize={9} fill="var(--muted)">J{matches[index].jornada}</text>
                         ) : null}
                         <rect x={x(index) - 14} y={0} width={28} height={height} fill="transparent" className="cursor-pointer" onMouseEnter={() => setSelected(index)} onClick={() => setSelected(index)}>
-                            <title>{`J${matches[index].jornada}: ${value} puntos (${formatPoints(matches[index].total)})`}</title>
+                            <title>{`J${matches[index].jornada}: ${ranks.get(matches[index].jornada) ?? "—"}º, ${value} puntos (${formatPoints(matches[index].total)})`}</title>
                         </rect>
                     </g>
                 ))}
-                <text x={Math.min(Math.max(x(selected), 40), width - 40)} y={12} textAnchor="middle" fontSize={11} fontWeight={700} fill="var(--paper)">
-                    J{matches[selected].jornada} · {current} pts ({formatPoints(matches[selected].total)})
+                <text x={Math.min(Math.max(x(selected), 70), width - 70)} y={12} textAnchor="middle" fontSize={11} fontWeight={700} fill="var(--paper)">
+                    J{matches[selected].jornada}{ranks.has(matches[selected].jornada) ? ` · ${ranks.get(matches[selected].jornada)}º` : ""} · {current} pts ({formatPoints(matches[selected].total)})
                 </text>
             </svg>
         </figure>
@@ -258,9 +260,9 @@ function StatTile({ label, children }: { label: string; children: ReactNode }) {
     );
 }
 
-function PlayerSheet({ player, onClose }: { player: FantasyPlayerRow; onClose: () => void }) {
+function PlayerSheet({ player, ranks, onClose }: { player: FantasyPlayerRow; ranks: Map<number, number>; onClose: () => void }) {
     const dialogRef = useModalDialog<HTMLElement>(onClose);
-    const playedMatches = player.matches.filter((match) => match.lines.some((line) => line.label === "Fue al partido"));
+    const playedMatches = player.matches.filter((match) => match.played);
     const average = playedMatches.length ? playedMatches.reduce((sum, match) => sum + match.total, 0) / playedMatches.length : 0;
     const best = player.matches.reduce<FantasyMatchScore | null>((top, match) => (!top || match.total > top.total ? match : top), null);
 
@@ -300,7 +302,7 @@ function PlayerSheet({ player, onClose }: { player: FantasyPlayerRow; onClose: (
                     {player.matches.length > 1 ? (
                         <div>
                             <h4 className="text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--lime)]">Evolución</h4>
-                            <div className="mt-2"><EvolutionChart matches={player.matches} /></div>
+                            <div className="mt-2"><EvolutionChart matches={player.matches} ranks={ranks} /></div>
                         </div>
                     ) : null}
 
@@ -336,20 +338,65 @@ function PlayerSheet({ player, onClose }: { player: FantasyPlayerRow; onClose: (
     );
 }
 
-// Fantasy de una competición: podio, lo mejor de la última jornada, ranking y ficha de cada jugador.
+// Botones de jornada para ver la clasificación tal como estaba al terminar cada una.
+function JornadaPicker({ jornadas, value, onChange }: { jornadas: number[]; value: number; onChange: (jornada: number) => void }) {
+    const listRef = useRef<HTMLDivElement>(null);
+    const last = jornadas.at(-1);
+
+    // Al entrar, la jornada actual (la última) a la vista.
+    useEffect(() => {
+        const list = listRef.current;
+        if (list) list.scrollLeft = list.scrollWidth;
+    }, []);
+
+    if (jornadas.length < 2) return null;
+    return (
+        <div className="mx-auto mb-6 max-w-3xl">
+            <p className="text-center text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--muted)]">
+                {value === last ? "Clasificación de hoy" : `Clasificación tras la jornada ${value}`}
+            </p>
+            <div ref={listRef} role="group" aria-label="Ver la clasificación tras una jornada" className="mt-2 flex gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none] sm:justify-center">
+                {jornadas.map((jornada) => {
+                    const active = jornada === value;
+                    return (
+                        <button
+                            key={jornada}
+                            type="button"
+                            aria-pressed={active}
+                            onClick={() => onChange(jornada)}
+                            className={`min-h-10 shrink-0 border px-3 text-xs font-black uppercase transition-colors ${active ? "border-[var(--lime)] bg-[var(--lime)] text-[var(--ink)]" : "border-[var(--line)] text-[var(--muted)] hover:border-[var(--lime)] hover:text-white"}`}
+                        >
+                            {jornada === last ? `J${jornada} · Hoy` : `J${jornada}`}
+                        </button>
+                    );
+                })}
+            </div>
+        </div>
+    );
+}
+
+// Fantasy de una competición: selector de jornada, podio, lo mejor de la jornada, ranking y ficha de
+// cada jugador. La ficha muestra siempre todos los partidos hasta hoy.
 export function FantasyBoard({ ranking }: { ranking: FantasyPlayerRow[] }) {
+    const jornadas = useMemo(() => fantasyJornadas(ranking), [ranking]);
+    const latest = jornadas.at(-1) ?? 0;
+    const [jornada, setJornada] = useState(latest);
     const [openId, setOpenId] = useState<string | null>(null);
     const close = useCallback(() => setOpenId(null), []);
     const open = useCallback((player: FantasyPlayerRow) => setOpenId(player.id), []);
-    const podium = ranking.slice(0, 3);
-    const rest = ranking.slice(3);
+    const shown = jornadas.includes(jornada) ? jornada : latest;
+    const view = useMemo(() => (shown === latest ? ranking : rankingAt(ranking, shown)), [ranking, shown, latest]);
+    const podium = view.slice(0, 3);
+    const rest = view.slice(3);
     const scale = Math.max(1, ...ranking.flatMap((player) => player.matches.map((match) => Math.abs(match.total))));
     const selected = ranking.find((player) => player.id === openId) ?? null;
+    const selectedRanks = useMemo(() => (openId ? rankHistory(ranking, openId) : new Map<number, number>()), [ranking, openId]);
 
     return (
         <>
-            <Podium players={podium} onOpen={open} />
-            <Highlight ranking={ranking} onOpen={open} />
+            <JornadaPicker jornadas={jornadas} value={shown} onChange={setJornada} />
+            <Podium key={shown} players={podium} onOpen={open} />
+            <Highlight ranking={view} onOpen={open} />
 
             {rest.length ? (
                 <ol className="mx-auto mt-6 max-w-3xl divide-y divide-[var(--line)] border border-[var(--line)] bg-[var(--panel)]" start={4}>
@@ -379,7 +426,7 @@ export function FantasyBoard({ ranking }: { ranking: FantasyPlayerRow[] }) {
 
             <p className="mt-3 text-center text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--muted)]">Toca un jugador para ver su ficha fantasy</p>
 
-            {selected ? <PlayerSheet player={selected} onClose={close} /> : null}
+            {selected ? <PlayerSheet player={selected} ranks={selectedRanks} onClose={close} /> : null}
         </>
     );
 }

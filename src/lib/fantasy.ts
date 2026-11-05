@@ -204,7 +204,8 @@ export type FantasyInputMatch = {
 };
 export type FantasyInputRow = FantasyExtra & { partido_id: string; jugador_id: string; ausencia: FantasyAbsence | null; portero: boolean };
 
-export type FantasyMatchScore = { id: string; jornada: number; opponent: string; score: string; total: number; lines: FantasyLine[] };
+// played: fue convocado a ese partido.
+export type FantasyMatchScore = { id: string; jornada: number; opponent: string; score: string; played: boolean; total: number; lines: FantasyLine[] };
 export type FantasyPlayerRow = {
     id: string;
     name: string;
@@ -213,8 +214,8 @@ export type FantasyPlayerRow = {
     video: string | null;
     total: number;
     played: number;
-    // Puesto (los empatados lo comparten) y cuántos puestos ha subido (+) o bajado (−) con el
-    // último partido; null si no estaba en el ranking antes de él o solo hay un partido.
+    // Puesto (los empatados lo comparten) y cuántos puestos ha subido (+) o bajado (−) respecto a
+    // la jornada anterior; null si no estaba en el ranking antes o es la primera jornada.
     rank: number;
     movement: number | null;
     matches: FantasyMatchScore[];
@@ -239,7 +240,7 @@ export function buildFantasyRanking({ players, matches, stats, rows }: {
 }): FantasyPlayerRow[] {
     const rowByKey = new Map(rows.map((row) => [`${row.partido_id}:${row.jugador_id}`, row]));
     const ordered = [...matches].sort((a, b) => a.jornada - b.jornada);
-    const lastMatchId = ordered.at(-1)?.id;
+    const lastJornada = ordered.at(-1)?.jornada;
     const scored = players.map((player) => {
         const playerMatches: FantasyMatchScore[] = [];
         for (const match of ordered) {
@@ -260,36 +261,64 @@ export function buildFantasyRanking({ players, matches, stats, rows }: {
                     extra: row ?? null,
                 })
                 : scorePlayerMatch({ calledUp: false, absence: row?.ausencia ?? "injustificada" });
-            playerMatches.push({ id: match.id, jornada: match.jornada, opponent: match.opponent, score: match.score, ...score });
+            playerMatches.push({ id: match.id, jornada: match.jornada, opponent: match.opponent, score: match.score, played: calledUp, ...score });
         }
         return { player, matches: playerMatches };
     }).filter((item) => item.matches.length);
 
-    const totals = new Map(scored.map(({ player, matches: list }) => [player.id, sumPoints(list)]));
-    const rankNow = ranks(totals);
-    // Ranking antes del último partido, para las flechas de subida y bajada.
-    const before = new Map(scored
-        .map(({ player, matches: list }) => ({ id: player.id, previous: list.filter((match) => match.id !== lastMatchId) }))
-        .filter(({ previous }) => ordered.length > 1 && previous.length > 0)
-        .map(({ id, previous }) => [id, sumPoints(previous)]));
-    const rankBefore = ranks(before);
+    const full = scored.map(({ player, matches: list }): FantasyPlayerRow => ({
+        id: player.id,
+        name: player.name,
+        number: player.number,
+        photo: player.photo ?? null,
+        video: player.video ?? null,
+        total: 0,
+        played: 0,
+        rank: 0,
+        movement: null,
+        matches: list,
+    }));
+    return lastJornada === undefined ? [] : rankingAt(full, lastJornada);
+}
 
-    return scored.map(({ player, matches: list }): FantasyPlayerRow => {
-        const previous = rankBefore.get(player.id);
+// Jornadas puntuadas, de la primera a la última.
+export function fantasyJornadas(ranking: FantasyPlayerRow[]): number[] {
+    return [...new Set(ranking.flatMap((player) => player.matches.map((match) => match.jornada)))].sort((a, b) => a - b);
+}
+
+// Clasificación tal como estaba al terminar una jornada: solo cuentan los partidos hasta ella y las
+// flechas comparan con la jornada puntuada anterior. Recibe el ranking con todos los partidos.
+export function rankingAt(ranking: FantasyPlayerRow[], jornada: number): FantasyPlayerRow[] {
+    const previousJornada = fantasyJornadas(ranking).filter((item) => item < jornada).at(-1);
+    const cut = (limit: number) => ranking
+        .map((player) => ({ player, matches: player.matches.filter((match) => match.jornada <= limit) }))
+        .filter(({ matches: list }) => list.length);
+    const now = cut(jornada);
+    const rankNow = ranks(new Map(now.map(({ player, matches: list }) => [player.id, sumPoints(list)])));
+    const rankBefore = previousJornada === undefined
+        ? new Map<string, number>()
+        : ranks(new Map(cut(previousJornada).map(({ player, matches: list }) => [player.id, sumPoints(list)])));
+
+    return now.map(({ player, matches: list }): FantasyPlayerRow => {
         const rank = rankNow.get(player.id) ?? 0;
+        const previous = rankBefore.get(player.id);
         return {
-            id: player.id,
-            name: player.name,
-            number: player.number,
-            photo: player.photo ?? null,
-            video: player.video ?? null,
-            total: totals.get(player.id) ?? 0,
-            played: ordered.filter((match) => match.calledUp.has(player.id)).length,
+            ...player,
+            total: sumPoints(list),
+            played: list.filter((match) => match.played).length,
             rank,
             movement: previous === undefined ? null : previous - rank,
             matches: list,
         };
     }).sort((a, b) => b.total - a.total || b.played - a.played || a.name.localeCompare(b.name, "es"));
+}
+
+// Puesto del jugador al terminar cada jornada.
+export function rankHistory(ranking: FantasyPlayerRow[], playerId: string): Map<number, number> {
+    return new Map(fantasyJornadas(ranking).flatMap((jornada) => {
+        const rank = rankingAt(ranking, jornada).find((player) => player.id === playerId)?.rank;
+        return rank === undefined ? [] : [[jornada, rank] as const];
+    }));
 }
 
 // El que más puntos sumó en el último partido puntuado (a igualdad, el mejor del ranking).
