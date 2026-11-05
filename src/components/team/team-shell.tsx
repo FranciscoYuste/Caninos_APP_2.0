@@ -126,7 +126,7 @@ export function TeamShell({ competition, competitions, seasons, teamPosition, ne
                         <nav aria-label="Secciones del equipo" className="sticky top-0 z-10 -mx-5 grid grid-cols-2 gap-2 border-b border-[var(--line)] bg-[var(--ink)] px-5 py-3 sm:-mx-10 sm:flex sm:flex-wrap sm:justify-center sm:px-10">
                             {menuItems.map(({ id, label, icon: Icon }) => (
                                 <Link key={id} href={sectionHref(competition, id)} scroll={false} aria-current={activeMenu === id ? "page" : undefined} className={`flex min-w-0 items-center justify-center gap-1.5 border px-2 py-3 odd:last:col-span-2 text-[10px] font-bold uppercase leading-tight tracking-[0.04em] transition-colors sm:shrink-0 sm:gap-2 sm:px-4 sm:tracking-[0.08em] ${activeMenu === id ? "border-[var(--lime)] bg-[var(--lime)] text-[var(--ink)]" : "border-[var(--line)] text-[var(--muted)] hover:border-[var(--lime)] hover:text-white"}`}>
-                                    <Icon size={15} className="shrink-0" />{label}
+                                    <Icon size={15} className="shrink-0" /><span className="min-w-0 text-center">{label}</span>
                                 </Link>
                             ))}
                         </nav>
