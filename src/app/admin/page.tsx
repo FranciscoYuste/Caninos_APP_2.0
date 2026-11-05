@@ -1,11 +1,13 @@
 import { redirect } from "next/navigation";
 import { AdminPanel } from "@/components/admin-panel";
+import type { FantasySaved } from "@/components/admin-match-stats";
 import type { HubMatch } from "@/components/admin-match-hub";
 import type { MediaPlayer } from "@/components/admin-media";
 import type { ResultMatch } from "@/components/admin-results-editor";
 import type { RosterPlayer } from "@/components/admin-roster-manager";
 import { loadAdminCompetitions } from "@/lib/admin-competition";
 import { isFeaturedMatch } from "@/lib/config";
+import { EMPTY_FANTASY_EXTRA, isFantasyAbsence, type FantasyExtra } from "@/lib/fantasy";
 import { madridDate, madridTime } from "@/lib/madrid-time";
 import { EMPTY_STAT_LINE, MATCH_STAT_FIELDS, type MatchStatLine } from "@/lib/players";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
@@ -66,6 +68,23 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
             .eq("partidos.grupo", competition.group),
         adminClient.from("equipos").select("codigo,nombre").order("codigo"),
     ]);
+    // Fantasy aparte: si aún no se ha aplicado su migración, el resto del admin sigue funcionando.
+    const [fantasyMatchResult, fantasyRowResult] = await Promise.all([
+        adminClient
+            .from("partidos")
+            .select("id,dobles_penaltis_en_contra")
+            .eq("temporada", competition.season)
+            .eq("fase", competition.phase)
+            .eq("grupo", competition.group),
+        adminClient
+            .from("fantasy_partido")
+            .select(`partido_id,jugador_id,ausencia,portero,${Object.keys(EMPTY_FANTASY_EXTRA).join(",")},partidos!inner(temporada,fase,grupo)`)
+            .eq("partidos.temporada", competition.season)
+            .eq("partidos.fase", competition.phase)
+            .eq("partidos.grupo", competition.group),
+    ]);
+    const fantasyAvailable = !fantasyMatchResult.error && !fantasyRowResult.error;
+    if (!fantasyAvailable) console.error("Fantasy admin data unavailable", fantasyMatchResult.error ?? fantasyRowResult.error);
     const queryErrors = [
         { resource: "partidos para administración", error: matchResult.error },
         { resource: "jugadores para administración", error: playerResult.error },
@@ -87,6 +106,17 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
     for (const row of (statsResult.data ?? []) as unknown as Array<Record<string, unknown> & { partido_id: string; jugador_id: string }>) {
         const line = Object.fromEntries(MATCH_STAT_FIELDS.map(({ key }) => [key, Number(row[key] ?? 0)])) as MatchStatLine;
         statsByMatch.set(row.partido_id, { ...statsByMatch.get(row.partido_id), [row.jugador_id]: { ...EMPTY_STAT_LINE, ...line } });
+    }
+
+    const fantasyByMatch = new Map<string, FantasySaved>();
+    if (fantasyAvailable) {
+        for (const match of fantasyMatchResult.data ?? []) fantasyByMatch.set(match.id, { rows: {}, doublePenaltiesAgainst: match.dobles_penaltis_en_contra ?? 0 });
+        for (const row of (fantasyRowResult.data ?? []) as unknown as Array<Record<string, unknown> & { partido_id: string; jugador_id: string }>) {
+            const saved = fantasyByMatch.get(row.partido_id);
+            if (!saved) continue;
+            const extra = Object.fromEntries(Object.keys(EMPTY_FANTASY_EXTRA).map((key) => [key, Number(row[key] ?? 0)])) as FantasyExtra;
+            saved.rows[row.jugador_id] = { ...extra, ausencia: isFantasyAbsence(row.ausencia) ? row.ausencia : null, portero: row.portero === true };
+        }
     }
 
     const roundMatches: ResultMatch[] = matches.map((match) => ({
@@ -115,6 +145,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
         katsuId: match.jugador_katsu_id,
         chronicle: match.cronica,
         photo: match.foto_convocatoria_url,
+        fantasy: fantasyByMatch.get(match.id) ?? null,
     }));
 
     const allPlayers = playerResult.data ?? [];
@@ -142,7 +173,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
             teams={(teamResult.data ?? []).map((team) => ({ code: team.codigo, name: team.nombre }))}
             hubMatches={hubMatches}
             roundMatches={roundMatches}
-            players={activePlayers.map((player) => ({ id: player.id, name: player.nombre, number: player.dorsal }))}
+            players={activePlayers.map((player) => ({ id: player.id, name: player.nombre, number: player.dorsal, position: player.posicion, injured: player.lesionado }))}
             roster={roster}
             injuryPlayers={activePlayers.map((player) => ({
                 id: player.id,
