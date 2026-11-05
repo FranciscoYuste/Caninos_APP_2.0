@@ -6,7 +6,7 @@ import { ArrowDown, ArrowUp, Minus, X } from "lucide-react";
 import { FramedPhoto, FramedVideo } from "@/components/team/framed-media";
 import { useModalDialog } from "@/components/team/use-modal-dialog";
 import { categoryTotals, formatPoints, latestHighlight, type FantasyMatchScore, type FantasyPlayerRow } from "@/lib/fantasy";
-import { AVATAR_PHOTO_FRAME, CARD_PHOTO_FRAME, CARD_VIDEO_FRAME } from "@/lib/media-framing";
+import { AVATAR_PHOTO_FRAME, FANTASY_PHOTO_FRAME, FANTASY_VIDEO_FRAME } from "@/lib/media-framing";
 
 const MEDALS = [
     { label: "Oro", color: "var(--lime)" },
@@ -23,7 +23,7 @@ function prefersReducedMotion(): boolean {
 }
 
 // Cuenta de 0 al total la primera vez que el elemento entra en pantalla.
-function CountUp({ value, className }: { value: number; className?: string }) {
+function CountUp({ value, className, signed = false }: { value: number; className?: string; signed?: boolean }) {
     const ref = useRef<HTMLSpanElement>(null);
     const [shown, setShown] = useState<number | null>(null);
 
@@ -51,14 +51,15 @@ function CountUp({ value, className }: { value: number; className?: string }) {
         };
     }, [value]);
 
-    return <span ref={ref} className={className}>{shown ?? value}</span>;
+    const current = shown ?? value;
+    return <span ref={ref} className={className}>{signed ? formatPoints(current) : current}</span>;
 }
 
 // Foto (o vídeo) del jugador encuadrada; sin foto, el escudo.
 function PlayerMedia({ player, kind, video = false }: { player: FantasyPlayerRow; kind: "card" | "avatar"; video?: boolean }) {
-    if (video && player.video) return <FramedVideo src={player.video} label={`vídeo de ${player.name}`} frame={CARD_VIDEO_FRAME} />;
+    if (video && player.video) return <FramedVideo src={player.video} label={`vídeo de ${player.name}`} frame={FANTASY_VIDEO_FRAME} />;
     if (player.photo) {
-        return <FramedPhoto src={player.photo} alt={player.name} frame={kind === "card" ? CARD_PHOTO_FRAME : AVATAR_PHOTO_FRAME} sizes={kind === "card" ? "(max-width: 640px) 40vw, 220px" : "64px"} />;
+        return <FramedPhoto src={player.photo} alt={player.name} frame={kind === "card" ? FANTASY_PHOTO_FRAME : AVATAR_PHOTO_FRAME} sizes={kind === "card" ? "(max-width: 640px) 40vw, 220px" : "64px"} />;
     }
     return (
         <span className="absolute inset-0 grid place-items-center opacity-40">
@@ -118,7 +119,8 @@ function Podium({ players, onOpen }: { players: FantasyPlayerRow[]; onOpen: (pla
         <div className={`mx-auto grid max-w-xl items-end gap-2 sm:gap-4 ${slots.length === 3 ? "grid-cols-3" : slots.length === 2 ? "max-w-sm grid-cols-2" : "max-w-[12rem] grid-cols-1"}`}>
             {slots.map((player) => {
                 const place = players.indexOf(player);
-                const medal = MEDALS[place];
+                // La medalla sigue el puesto (empatados, la misma); el escalón, el orden.
+                const medal = MEDALS[Math.min(player.rank, 3) - 1];
                 const leader = place === 0;
                 return (
                     <button
@@ -130,7 +132,7 @@ function Podium({ players, onOpen }: { players: FantasyPlayerRow[]; onOpen: (pla
                         aria-label={`${player.rank}º ${player.name}, ${player.total} puntos. Ver detalle`}
                     >
                         <span className={`fantasy-podium-card relative block w-full overflow-hidden rounded-xl ${leader ? "aspect-[3/4.3]" : "aspect-[3/4]"}`}>
-                            <PlayerMedia player={player} kind="card" video={leader} />
+                            <PlayerMedia player={player} kind="card" video />
                             <span className="pointer-events-none absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black via-black/70 to-transparent" />
                             <span className="absolute left-2 top-2 flex items-center gap-1 rounded-full bg-black/70 px-2 py-0.5 text-[10px] font-black uppercase" style={{ color: "var(--medal)" }}>
                                 {medal.label}
@@ -158,23 +160,19 @@ function Highlight({ ranking, onOpen }: { ranking: FantasyPlayerRow[]; onOpen: (
     const best = latestHighlight(ranking);
     if (!best || best.match.total <= 0) return null;
     const { player, match } = best;
-    const top = [...match.lines].filter((line) => line.points > 0).sort((a, b) => b.points - a.points).slice(0, 4);
+    // Lo que hizo, sin lo que tiene todo el que va (ir al partido, goles encajados).
+    const actions = match.lines
+        .filter((line) => line.points > 0 && line.category !== "asistencia" && line.category !== "defensa")
+        .map((line) => line.label);
     return (
-        <button type="button" onClick={() => onOpen(player)} className="fantasy-highlight mx-auto mt-8 flex w-full max-w-3xl items-center gap-3 border border-[var(--lime)]/50 bg-[var(--panel)] p-3 text-left sm:gap-4 sm:p-4">
+        <button type="button" onClick={() => onOpen(player)} className="fantasy-highlight mx-auto mt-8 flex w-full max-w-3xl items-center gap-4 border border-[var(--lime)]/50 bg-[var(--panel)] p-3 text-left sm:p-4">
             <Avatar player={player} size="size-16 sm:size-20" />
             <span className="min-w-0 flex-1">
-                <span className="block text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--lime)]">Lo mejor de la J{match.jornada} · {match.opponent} {match.score}</span>
-                <span className="mt-0.5 block truncate text-base font-black uppercase sm:text-lg">{player.name}</span>
-                <span className="mt-1 flex flex-wrap gap-1">
-                    {top.map((line) => (
-                        <span key={line.label} className="rounded-full border border-[var(--line)] px-2 py-0.5 text-[10px] font-bold text-white/80">{line.label} <span className="font-mono text-[var(--lime)]">{formatPoints(line.points)}</span></span>
-                    ))}
-                </span>
+                <span className="block text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--lime)]">Lo mejor de la J{match.jornada}</span>
+                <span className="mt-0.5 block truncate text-lg font-black uppercase">{player.name}</span>
+                <span className="block truncate text-xs text-[var(--muted)]">{actions.length ? actions.join(" · ") : `vs ${match.opponent}`}</span>
             </span>
-            <span className="shrink-0 text-right">
-                <span className="block font-[family-name:var(--font-card)] text-4xl font-bold leading-none text-[var(--lime)]">{formatPoints(match.total)}</span>
-                <span className="text-[9px] font-bold uppercase text-[var(--muted)]">en el partido</span>
-            </span>
+            <CountUp value={match.total} signed className="shrink-0 font-[family-name:var(--font-card)] text-5xl font-bold leading-none text-[var(--lime)]" />
         </button>
     );
 }
@@ -237,7 +235,7 @@ function CategoryBars({ matches }: { matches: FantasyMatchScore[] }) {
             {totals.map((item) => (
                 <li key={item.id} className="grid grid-cols-[minmax(0,1fr)_3rem] items-center gap-x-3 gap-y-1 text-xs">
                     <span className="truncate text-white/80">{item.label}</span>
-                    <span className={`row-span-2 text-right font-mono text-sm font-black ${pointsColor(item.points)}`}>{formatPoints(item.points)}</span>
+                    <CountUp value={item.points} signed className={`row-span-2 text-right font-mono text-sm font-black ${pointsColor(item.points)}`} />
                     <span className="relative block h-2 bg-[var(--line)]/40">
                         <span className="absolute inset-y-0 left-1/2 w-px bg-[var(--line)]" />
                         <span
@@ -260,7 +258,7 @@ function StatTile({ label, children }: { label: string; children: ReactNode }) {
     );
 }
 
-function PlayerSheet({ player, leader, onClose }: { player: FantasyPlayerRow; leader: boolean; onClose: () => void }) {
+function PlayerSheet({ player, onClose }: { player: FantasyPlayerRow; onClose: () => void }) {
     const dialogRef = useModalDialog<HTMLElement>(onClose);
     const playedMatches = player.matches.filter((match) => match.lines.some((line) => line.label === "Fue al partido"));
     const average = playedMatches.length ? playedMatches.reduce((sum, match) => sum + match.total, 0) / playedMatches.length : 0;
@@ -268,18 +266,18 @@ function PlayerSheet({ player, leader, onClose }: { player: FantasyPlayerRow; le
 
     return (
         <div
-            className="fantasy-sheet-backdrop fixed inset-0 z-50 flex items-end justify-center bg-black/80 sm:items-center sm:p-6"
+            className="fantasy-sheet-backdrop fixed inset-0 z-50 flex justify-center bg-black/80 sm:items-center sm:p-6"
             onMouseDown={(event) => {
                 if (event.target === event.currentTarget) onClose();
             }}
         >
-            <section ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="fantasy-player-title" className="fantasy-sheet relative max-h-[92vh] w-full max-w-lg overflow-y-auto border-t border-[var(--lime)]/60 bg-[var(--panel)] sm:border">
+            <section ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="fantasy-player-title" className="fantasy-sheet relative h-[100dvh] w-full max-w-lg overflow-y-auto overscroll-contain bg-[var(--panel)] sm:h-auto sm:max-h-[90vh] sm:border sm:border-[var(--lime)]/60">
                 <button type="button" aria-label="Cerrar" onClick={onClose} className="absolute right-3 top-3 z-10 grid size-11 place-items-center border border-[var(--line)] bg-black/70 text-white hover:border-[var(--lime)]">
                     <X size={18} />
                 </button>
-                <div className="flex items-end gap-4 bg-gradient-to-b from-[var(--lime)]/15 to-transparent p-4 pb-3">
-                    <span className="relative block aspect-[3/4] w-28 shrink-0 overflow-hidden rounded-lg border border-[var(--lime)]/50 bg-gradient-to-b from-[#2a2e2a] to-[var(--ink)] sm:w-32">
-                        <PlayerMedia player={player} kind="card" video={leader} />
+                <div className="flex items-end gap-4 bg-gradient-to-b from-[var(--lime)]/15 to-transparent p-4 pb-3 pt-[max(1rem,env(safe-area-inset-top))]">
+                    <span className="relative block aspect-[3/4] w-32 shrink-0 overflow-hidden rounded-lg border border-[var(--lime)]/50 bg-gradient-to-b from-[#2a2e2a] to-[var(--ink)] sm:w-36">
+                        <PlayerMedia player={player} kind="card" video />
                     </span>
                     <div className="min-w-0 pb-1">
                         <p className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--lime)]">{player.rank}º en el fantasy <Movement value={player.movement} /></p>
@@ -295,8 +293,8 @@ function PlayerSheet({ player, leader, onClose }: { player: FantasyPlayerRow; le
                 <div className="space-y-5 p-4 pt-2">
                     <div className="grid grid-cols-3 gap-2">
                         <StatTile label="Media">{average.toLocaleString("es-ES", { maximumFractionDigits: 1 })}</StatTile>
-                        <StatTile label="Mejor partido">{best ? <span className={pointsColor(best.total)}>{formatPoints(best.total)}<span className="ml-1 text-xs text-[var(--muted)]">J{best.jornada}</span></span> : "—"}</StatTile>
-                        <StatTile label="Jugados">{player.played}</StatTile>
+                        <StatTile label="Mejor partido">{best ? <span className={pointsColor(best.total)}><CountUp value={best.total} signed /><span className="ml-1 text-xs text-[var(--muted)]">J{best.jornada}</span></span> : "—"}</StatTile>
+                        <StatTile label="Jugados"><CountUp value={player.played} /></StatTile>
                     </div>
 
                     {player.matches.length > 1 ? (
@@ -371,7 +369,7 @@ export function FantasyBoard({ ranking }: { ranking: FantasyPlayerRow[] }) {
                                     </span>
                                 </span>
                                 <span className={`text-right font-[family-name:var(--font-card)] text-2xl font-bold leading-none ${pointsColor(player.total)}`}>
-                                    {player.total}<span className="ml-0.5 text-[9px] font-bold text-[var(--muted)]">PTS</span>
+                                    <CountUp value={player.total} /><span className="ml-0.5 text-[9px] font-bold text-[var(--muted)]">PTS</span>
                                 </span>
                             </button>
                         </li>
@@ -381,7 +379,7 @@ export function FantasyBoard({ ranking }: { ranking: FantasyPlayerRow[] }) {
 
             <p className="mt-3 text-center text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--muted)]">Toca un jugador para ver su ficha fantasy</p>
 
-            {selected ? <PlayerSheet player={selected} leader={selected.id === ranking[0]?.id} onClose={close} /> : null}
+            {selected ? <PlayerSheet player={selected} onClose={close} /> : null}
         </>
     );
 }
