@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import type { ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import { Activity, Ambulance, ArrowUpRight, CalendarDays, CalendarPlus, ClipboardList, Gamepad2, Shield, Star, Trophy, Users } from "lucide-react";
 import { Countdown } from "@/components/team/countdown";
 import { FormBadges } from "@/components/team/form-badges";
@@ -30,6 +30,17 @@ function sectionHref(competition: ShellCompetition, id: MenuId) {
     return competitionPath(competition, id === "competition" ? undefined : id);
 }
 
+// Al pulsar una sección se baja hasta su contenido, con el menú arriba del todo. Vive fuera del
+// componente porque las páginas de detalle montan su propio TeamShell al navegar.
+let scrollToSectionPending = false;
+
+function scrollToSection(nav: HTMLElement | null, content: HTMLElement | null) {
+    if (!nav || !content) return;
+    const top = content.getBoundingClientRect().top + window.scrollY - nav.offsetHeight;
+    const smooth = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    window.scrollTo({ top: Math.max(0, top), behavior: smooth ? "smooth" : "auto" });
+}
+
 export function TeamShell({ competition, competitions, seasons, teamPosition, nextMatch, teamForm, activeSection, children }: {
     competition: ShellCompetition;
     competitions: ShellCompetition[];
@@ -47,6 +58,16 @@ export function TeamShell({ competition, competitions, seasons, teamPosition, ne
     const activeMenu: MenuId = activeSection ?? (isTeamSection(routeSection) ? routeSection : "competition");
     const pending = competition.status === "pendiente";
     const isCurrent = (item: ShellCompetition) => item.season === competition.season && item.slug === competition.slug;
+    const navRef = useRef<HTMLElement>(null);
+    const contentRef = useRef<HTMLDivElement>(null);
+
+    // Tras navegar a la sección pulsada, cuando ya está pintada.
+    useEffect(() => {
+        if (!scrollToSectionPending) return;
+        scrollToSectionPending = false;
+        const frame = requestAnimationFrame(() => scrollToSection(navRef.current, contentRef.current));
+        return () => cancelAnimationFrame(frame);
+    }, [pathname]);
 
     return (
         <main className="min-h-screen">
@@ -123,14 +144,23 @@ export function TeamShell({ competition, competitions, seasons, teamPosition, ne
 
                 {!pending ? (
                     <>
-                        <nav aria-label="Secciones del equipo" className="sticky top-0 z-10 -mx-5 grid grid-cols-2 gap-2 border-b border-[var(--line)] bg-[var(--ink)] px-5 py-3 sm:-mx-10 sm:flex sm:flex-wrap sm:justify-center sm:px-10">
+                        <nav ref={navRef} aria-label="Secciones del equipo" className="sticky top-0 z-10 -mx-5 grid grid-cols-2 gap-2 border-b border-[var(--line)] bg-[var(--ink)] px-5 py-3 sm:-mx-10 sm:flex sm:flex-wrap sm:justify-center sm:px-10">
                             {menuItems.map(({ id, label, icon: Icon }) => (
-                                <Link key={id} href={sectionHref(competition, id)} scroll={false} aria-current={activeMenu === id ? "page" : undefined} className={`flex min-w-0 items-center justify-center gap-1.5 border px-2 py-3 odd:last:col-span-2 text-[10px] font-bold uppercase leading-tight tracking-[0.04em] transition-colors sm:shrink-0 sm:gap-2 sm:px-4 sm:tracking-[0.08em] ${activeMenu === id ? "border-[var(--lime)] bg-[var(--lime)] text-[var(--ink)]" : "border-[var(--line)] text-[var(--muted)] hover:border-[var(--lime)] hover:text-white"}`}>
+                                <Link
+                                    key={id}
+                                    href={sectionHref(competition, id)}
+                                    scroll={false}
+                                    onClick={() => {
+                                        // Misma sección: no hay navegación, se baja ya.
+                                        if (sectionHref(competition, id) === pathname) scrollToSection(navRef.current, contentRef.current);
+                                        else scrollToSectionPending = true;
+                                    }}
+                                    aria-current={activeMenu === id ? "page" : undefined} className={`flex min-w-0 items-center justify-center gap-1.5 border px-2 py-3 odd:last:col-span-2 text-[10px] font-bold uppercase leading-tight tracking-[0.04em] transition-colors sm:shrink-0 sm:gap-2 sm:px-4 sm:tracking-[0.08em] ${activeMenu === id ? "border-[var(--lime)] bg-[var(--lime)] text-[var(--ink)]" : "border-[var(--line)] text-[var(--muted)] hover:border-[var(--lime)] hover:text-white"}`}>
                                     <Icon size={15} className="shrink-0" /><span className="min-w-0 text-center">{label}</span>
                                 </Link>
                             ))}
                         </nav>
-                        {children}
+                        <div ref={contentRef}>{children}</div>
                     </>
                 ) : (
                     <section className="mx-auto max-w-3xl py-16 text-center sm:py-24">
