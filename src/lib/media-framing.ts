@@ -24,7 +24,7 @@ export const KATSU_PHOTO_FRAME: FrameTarget = { headWidth: 0.285, top: 0.06, cen
 export const FANTASY_PHOTO_FRAME: FrameTarget = { headWidth: 0.4, top: 0.1, centerX: 0.5 };
 export const FANTASY_VIDEO_FRAME: FrameTarget = { headWidth: 0.38, top: 0.1, centerX: 0.5 };
 // Fantasy: caras redondas del ranking, con la cabeza grande y centrada.
-export const AVATAR_PHOTO_FRAME: FrameTarget = { headWidth: 0.5, top: 0.14, centerX: 0.5 };
+export const AVATAR_PHOTO_FRAME: FrameTarget = { headWidth: 0.46, top: 0.07, centerX: 0.5 };
 
 const SAMPLE_WIDTH = 120;
 
