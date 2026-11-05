@@ -1,5 +1,6 @@
 import { ChevronDown } from "lucide-react";
 import { FEATURED_TEAM } from "@/lib/config";
+import { FantasyBoard } from "@/components/team/fantasy-board";
 import { FANTASY_CONCEDED_RULES, FANTASY_RULES, formatPoints, type FantasyPlayerRow } from "@/lib/fantasy";
 
 function pointsColor(points: number): string {
@@ -60,7 +61,7 @@ export function FantasySection({ ranking, season }: { ranking: FantasyPlayerRow[
             <div className="mb-7 text-center">
                 <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--lime)]">Temporada {season} · {FEATURED_TEAM}</p>
                 <h2 className="mt-2 text-3xl font-black uppercase sm:text-4xl">Fantasy</h2>
-                <p className="mx-auto mt-3 max-w-2xl text-sm leading-6 text-[var(--muted)]">Puntos de cada jugador partido a partido. Toca un jugador para ver de dónde salen.</p>
+                <p className="mx-auto mt-3 max-w-2xl text-sm leading-6 text-[var(--muted)]">Puntos de cada jugador partido a partido: quién manda, quién viene en racha y de dónde sale cada punto.</p>
             </div>
 
             {ranking === null ? (
@@ -68,44 +69,7 @@ export function FantasySection({ ranking, season }: { ranking: FantasyPlayerRow[
             ) : !ranking.length ? (
                 <p className="border border-dashed border-[var(--line)] p-4 text-xs text-[var(--muted)]">Todavía no hay partidos puntuados. El ranking aparecerá cuando haya un partido con resultado y convocatoria.</p>
             ) : (
-                <ol className="mx-auto max-w-3xl space-y-2">
-                    {ranking.map((player, index) => {
-                        const position = ranking.findIndex((other) => other.total === player.total) + 1;
-                        return (
-                            <li key={player.id}>
-                                <details className={`group border bg-[var(--panel)] ${index === 0 ? "border-[var(--lime)]/60" : "border-[var(--line)]"}`}>
-                                    <summary className="grid min-h-16 cursor-pointer list-none grid-cols-[2.25rem_minmax(0,1fr)_auto_1rem] items-center gap-3 px-3 py-3 marker:hidden sm:px-4">
-                                        <span className={`font-mono text-lg font-black ${position === 1 ? "text-[var(--lime)]" : "text-[var(--muted)]"}`}>{position}º</span>
-                                        <span className="min-w-0">
-                                            <span className="block truncate text-sm font-black uppercase">{player.name}</span>
-                                            <span className="block text-[10px] uppercase tracking-[0.08em] text-[var(--muted)]">{player.number !== null ? `#${player.number} · ` : ""}{player.played} {player.played === 1 ? "partido" : "partidos"}</span>
-                                        </span>
-                                        <span className={`font-mono text-2xl font-black ${pointsColor(player.total)}`}>{player.total}<span className="ml-1 text-[10px] font-bold text-[var(--muted)]">PTS</span></span>
-                                        <ChevronDown size={16} className="text-[var(--muted)] transition-transform group-open:rotate-180" />
-                                    </summary>
-                                    <div className="space-y-3 border-t border-[var(--line)] p-3 sm:p-4">
-                                        {player.matches.map((match) => (
-                                            <div key={match.id}>
-                                                <p className="flex items-center justify-between gap-3 text-[11px] font-bold uppercase tracking-[0.06em]">
-                                                    <span className="min-w-0 truncate">J{match.jornada} · {match.opponent} <span className="font-mono text-[var(--muted)]">{match.score}</span></span>
-                                                    <span className={`shrink-0 font-mono ${pointsColor(match.total)}`}>{formatPoints(match.total)}</span>
-                                                </p>
-                                                <ul className="mt-1 space-y-0.5 text-xs text-white/75">
-                                                    {match.lines.map((line, lineIndex) => (
-                                                        <li key={lineIndex} className="flex items-center justify-between gap-3 pl-3">
-                                                            <span className="min-w-0">{line.label}</span>
-                                                            <span className={`shrink-0 font-mono ${pointsColor(line.points)}`}>{formatPoints(line.points)}</span>
-                                                        </li>
-                                                    ))}
-                                                </ul>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </details>
-                            </li>
-                        );
-                    })}
-                </ol>
+                <FantasyBoard ranking={ranking} />
             )}
 
             <div className="mx-auto max-w-3xl"><RulesTable /></div>

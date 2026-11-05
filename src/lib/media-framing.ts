@@ -20,6 +20,8 @@ export type FrameTarget = {
 export const CARD_VIDEO_FRAME: FrameTarget = { headWidth: 0.32, top: 0.1, centerX: 0.55 };
 export const CARD_PHOTO_FRAME: FrameTarget = { headWidth: 0.29, top: 0.06, centerX: 0.5 };
 export const KATSU_PHOTO_FRAME: FrameTarget = { headWidth: 0.285, top: 0.06, centerX: 0.5 };
+// Fantasy: caras redondas del ranking, con la cabeza grande y centrada.
+export const AVATAR_PHOTO_FRAME: FrameTarget = { headWidth: 0.5, top: 0.14, centerX: 0.5 };
 
 const SAMPLE_WIDTH = 120;
 

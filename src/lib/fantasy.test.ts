@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { EMPTY_FANTASY_EXTRA, buildFantasyRanking, concededPoints, scorePlayerMatch, type FantasyStats } from "@/lib/fantasy";
+import { EMPTY_FANTASY_EXTRA, buildFantasyRanking, categoryTotals, concededPoints, latestHighlight, scorePlayerMatch, type FantasyStats } from "@/lib/fantasy";
 
 const NO_STATS: FantasyStats = { goles: 0, asistencias: 0, penaltis_marcados: 0, penaltis_tirados: 0, dobles_penaltis_marcados: 0, dobles_penaltis_tirados: 0, amarillas: 0, rojas: 0 };
 const played = (overrides: Partial<Parameters<typeof scorePlayerMatch>[0] & { calledUp: true }> = {}) => scorePlayerMatch({
@@ -74,5 +74,33 @@ describe("buildFantasyRanking", () => {
         expect(total("Cris")).toBe(0);
         expect(total("Bea")).toBe(14); // 5 + 6 portero + 3 KATSU
         expect(total("Ana")).toBe(8); // ya no es la portera: columna de campo
+    });
+
+    it("calcula puestos con empates y las flechas respecto al partido anterior", () => {
+        const second = { id: "m2", jornada: 2, opponent: "Otro", score: "0-4", conceded: 4, katsuId: "c", doublePenaltiesAgainst: 0, calledUp: new Set(["b", "c"]) };
+        const stats = new Map([["m2:c", { ...NO_STATS, goles: 3 }]]);
+        const ranking = buildFantasyRanking({ players, matches: [second, match], stats, rows: [] });
+        // Tras J1: Bea 11 y Ana 11 (empatadas 1ª), Cris −5 (3º). J2: Cris 21, Bea 3, Ana −5.
+        expect(ranking.map((row) => [row.name, row.total, row.rank, row.movement])).toEqual([
+            ["Cris", 16, 1, 2],
+            ["Bea", 14, 2, -1],
+            ["Ana", 6, 3, -2],
+        ]);
+        const best = latestHighlight(ranking);
+        expect([best?.player.name, best?.match.jornada, best?.match.total]).toEqual(["Cris", 2, 21]);
+    });
+
+    it("sin partido anterior no hay flechas", () => {
+        const ranking = buildFantasyRanking({ players, matches: [match], stats: new Map(), rows: [] });
+        expect(ranking.every((row) => row.movement === null)).toBe(true);
+    });
+});
+
+describe("categoryTotals", () => {
+    it("reparte los puntos por categoría y suma el total", () => {
+        const score = played({ stats: { ...NO_STATS, goles: 1, amarillas: 1 }, katsu: true, conceded: 0 });
+        const totals = categoryTotals([{ id: "m", jornada: 1, opponent: "X", score: "1-0", ...score }]);
+        expect(Object.fromEntries(totals.map((item) => [item.id, item.points]))).toEqual({ asistencia: 5, ataque: 8, penaltis: 0, defensa: 3, disciplina: -1 });
+        expect(totals.reduce((sum, item) => sum + item.points, 0)).toBe(score.total);
     });
 });
