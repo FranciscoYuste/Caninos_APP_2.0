@@ -59,7 +59,14 @@ function CountUp({ value, className, signed = false }: { value: number; classNam
 
 // Foto (o vídeo) del jugador encuadrada; sin foto, el escudo.
 function PlayerMedia({ player, kind, video = false }: { player: FantasyPlayerRow; kind: "card" | "avatar"; video?: boolean }) {
-    if (video && player.video) return <FramedVideo src={player.video} label={`vídeo de ${player.name}`} frame={FANTASY_VIDEO_FRAME} />;
+    if (video && player.video) {
+        // Los vídeos tienen fondo negro: si el encuadre no llena la tarjeta, el hueco no se nota.
+        return (
+            <span className="absolute inset-0 bg-black">
+                <FramedVideo src={player.video} label={`vídeo de ${player.name}`} frame={FANTASY_VIDEO_FRAME} />
+            </span>
+        );
+    }
     if (player.photo) {
         return <FramedPhoto src={player.photo} alt={player.name} frame={kind === "card" ? FANTASY_PHOTO_FRAME : AVATAR_PHOTO_FRAME} sizes={kind === "card" ? "(max-width: 640px) 40vw, 220px" : "64px"} />;
     }
